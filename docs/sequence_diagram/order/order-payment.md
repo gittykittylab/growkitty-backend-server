@@ -7,7 +7,7 @@ sequenceDiagram
   participant OrderController as OrderController
   participant OrderService as OrderService
   participant FulfilmentService as FulfilmentService
-  participant ProductService
+%%   participant ProductService
   participant CouponService
   participant PaymentService as PaymentService
   participant DataPlatform as DataPlatform
