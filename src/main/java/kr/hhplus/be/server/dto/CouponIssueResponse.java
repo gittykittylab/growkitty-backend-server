@@ -1,4 +1,7 @@
 package kr.hhplus.be.server.dto;
 
-public class CouponIssueResponse {
-}
+public record CouponIssueResponse(
+        Long userId,
+        String couponCode,
+        String message
+) {}
