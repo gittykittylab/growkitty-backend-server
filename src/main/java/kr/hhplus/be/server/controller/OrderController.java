@@ -1,6 +1,10 @@
 package kr.hhplus.be.server.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import kr.hhplus.be.server.dto.OrderRequest;
 import kr.hhplus.be.server.dto.OrderResponse;
@@ -27,7 +31,20 @@ public class OrderController {
         userCoupons.put(1L, "DISCOUNT50");  // 유저 ID -> 보유 쿠폰 코드
     }
 
-    @Operation(summary = "주문 요청", description = "상품 주문 및 결제를 처리합니다.")
+    @Operation(summary = "주문 및 결제 처리", description = "상품 주문과 포인트 결제를 처리합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "주문 결제 성공"),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = """
+            결제 실패 사유:
+            - 재고 부족
+            - 쿠폰 유효성 오류
+            - 잔액 부족 (InsufficientBalanceException)
+            """,
+                    content = @Content(schema = @Schema(implementation = OrderResponse.class))
+            )
+    })
     @PostMapping
     public ResponseEntity<OrderResponse> order(@RequestBody OrderRequest request) {
         Long userId = request.userId();
