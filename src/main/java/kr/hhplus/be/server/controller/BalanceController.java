@@ -1,6 +1,10 @@
 package kr.hhplus.be.server.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import kr.hhplus.be.server.dto.BalanceRequest;
 import kr.hhplus.be.server.dto.BalanceResponse;
@@ -28,8 +32,20 @@ public class BalanceController {
         return ResponseEntity.ok(new BalanceResponse(userId, balance, "조회 성공"));
     }
     //잔액 충전
-    @PostMapping("/charge")
     @Operation(summary = "포인트 충전", description = "유저에게 포인트를 충전합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "충전 성공"),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = """
+            잘못된 요청입니다. 다음과 같은 경우 실패할 수 있습니다:
+            - 충전 금액이 0 이하
+            - 충전 후 잔액이 최대 한도(10,000)를 초과
+            """,
+                    content = @Content(schema = @Schema(implementation = BalanceResponse.class))
+            )
+    })
+    @PostMapping("/charge")
     public ResponseEntity<BalanceResponse> chargeBalance(@RequestBody BalanceRequest request){
         Long userId = request.getUserId();
         Long amount = request.getAmount();
