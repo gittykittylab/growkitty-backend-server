@@ -1,6 +1,10 @@
 package kr.hhplus.be.server.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import kr.hhplus.be.server.dto.CouponIssueResponse;
 import org.springframework.http.ResponseEntity;
@@ -35,7 +39,20 @@ public class CouponController {
         userGrades.put(3L, "BRONZE");
     }
 
-    @Operation(summary = "쿠폰 발급", description = "유저에게 쿠폰을 발급합니다.")
+    @Operation(summary = "선착순 쿠폰 발급", description = "조건을 만족하는 유저에게 선착순 쿠폰을 발급합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "발급 성공"),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = """
+            쿠폰 발급 실패 사유:
+            - 쿠폰 수량 부족
+            - 유저 등급 조건 불충족
+            - 이미 발급받은 쿠폰 존재
+            """,
+                    content = @Content(schema = @Schema(implementation = CouponIssueResponse.class)) // 예시 DTO
+            )
+    })
     @PostMapping("/issue")
     public ResponseEntity<CouponIssueResponse> issueCoupon(
             @RequestParam Long userId,
