@@ -1,0 +1,305 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "OpenAPI definition",
+    "version": "v0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Generated server url"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Coupon",
+      "description": "쿠폰 발급 API"
+    },
+    {
+      "name": "Balance",
+      "description": "포인트 잔액 조회 API"
+    },
+    {
+      "name": "Order",
+      "description": "주문 및 결제 API"
+    }
+  ],
+  "paths": {
+    "/order": {
+      "post": {
+        "tags": [
+          "Order"
+        ],
+        "summary": "주문 및 결제 처리",
+        "description": "상품 주문과 포인트 결제를 처리합니다.",
+        "operationId": "order",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "주문 결제 성공",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "결제 실패 사유:\n- 재고 부족\n- 쿠폰 유효성 오류\n- 잔액 부족 (InsufficientBalanceException)\n",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/coupon/issue": {
+      "post": {
+        "tags": [
+          "Coupon"
+        ],
+        "summary": "선착순 쿠폰 발급",
+        "description": "조건을 만족하는 유저에게 선착순 쿠폰을 발급합니다.",
+        "operationId": "issueCoupon",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "couponCode",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "발급 성공",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CouponIssueResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "쿠폰 발급 실패 사유:\n- 쿠폰 수량 부족\n- 유저 등급 조건 불충족\n- 이미 발급받은 쿠폰 존재\n",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CouponIssueResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/balance/charge": {
+      "post": {
+        "tags": [
+          "Balance"
+        ],
+        "summary": "포인트 충전",
+        "description": "유저에게 포인트를 충전합니다.",
+        "operationId": "chargeBalance",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BalanceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "충전 성공",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalanceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청입니다. 다음과 같은 경우 실패할 수 있습니다:\n- 충전 금액이 0 이하\n- 충전 후 잔액이 최대 한도(10,000)를 초과\n",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalanceResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/balance/{userId}": {
+      "get": {
+        "tags": [
+          "Balance"
+        ],
+        "summary": "잔액 조회",
+        "description": "유저의 현재 포인트 잔액을 조회합니다.",
+        "operationId": "getBalance",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalanceResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "OrderRequest": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "description": "유저 ID",
+            "format": "int64",
+            "example": 1
+          },
+          "productId": {
+            "type": "integer",
+            "description": "상품 ID",
+            "format": "int64",
+            "example": 1001
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "주문 수량",
+            "format": "int32",
+            "example": 2
+          },
+          "totalAmount": {
+            "type": "integer",
+            "description": "총 결제 금액",
+            "format": "int64",
+            "example": 9000
+          },
+          "couponCode": {
+            "type": "string",
+            "description": "쿠폰 코드",
+            "example": "DISCOUNT50"
+          }
+        }
+      },
+      "OrderResponse": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string"
+          },
+          "finalAmount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "CouponIssueResponse": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "couponCode": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "BalanceRequest": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "description": "유저 ID",
+            "format": "int64",
+            "example": 1
+          },
+          "amount": {
+            "type": "integer",
+            "description": "충전 금액",
+            "format": "int64",
+            "example": 1000
+          }
+        }
+      },
+      "BalanceResponse": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "description": "유저 ID",
+            "format": "int64",
+            "example": 1
+          },
+          "balance": {
+            "type": "integer",
+            "description": "현재 잔액",
+            "format": "int64",
+            "example": 5000
+          },
+          "message": {
+            "type": "string",
+            "description": "처리 결과 메시지",
+            "example": "충전 성공"
+          }
+        }
+      }
+    }
+  }
+}
