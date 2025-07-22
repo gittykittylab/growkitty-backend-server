@@ -26,4 +26,11 @@ public class User {
         this.pointBalance += amount;
     }
 
+    // 포인트 사용
+    public void usePoint(int amount){
+        if(this.pointBalance < amount){
+            throw new InsufficientBalanceException("포인트가 부족합니다.");
+        }
+        this.pointBalance -= amount;
+    }
 }
