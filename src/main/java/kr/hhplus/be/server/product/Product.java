@@ -1,9 +1,12 @@
 package kr.hhplus.be.server.product;
 
 import jakarta.persistence.*;
+import kr.hhplus.be.server.common.exception.InsufficientStockException;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import javax.naming.InsufficientResourcesException;
 
 @Entity
 @Table(name = "products")
@@ -23,4 +26,18 @@ public class Product {
 
     @Column(name = "stock_qty", nullable = false)
     private Integer stockQty;
+
+    // 재고 감소
+    public void decreaseStock(int quantity) {
+        int restStock = this.stockQty - quantity;
+        if(restStock < 0){
+            throw new InsufficientStockException("재고가 부족합니다.");
+        }
+        this.stockQty = restStock;
+    }
+    // 재고 복원
+    public void increaseStock(int quantity){
+        this.stockQty += quantity;
+    }
+
 }
