@@ -35,4 +35,11 @@ public class ProductService {
                 .orElseThrow(() -> new EntityNotFoundException("상품이 없습니다. id=" + productId));
         return product.getStockQty() >= quantity;
     }
+
+    // 재고 감소
+    public void decreaseStock(Long productId, int quantity){
+        Product product = productRepository.findById(productId)
+                .orElseThrow(()-> new EntityNotFoundException("상품을 찾을 수 없습니다. id=" + productId));
+        product.decreaseStock(quantity);
+    }
 }
