@@ -25,7 +25,14 @@ public class ProductService {
     // 상품 상세 조회
     public ProductDetailResponse getProductById(Long productId){
         Product product = productRepository.findById(productId)
-                .orElseThrow(()-> new EntityNotFoundException("상품을 찾을 수 없습니다."));
+                .orElseThrow(()-> new EntityNotFoundException("상품을 찾을 수 없습니다. id=" + productId));
         return new ProductDetailResponse(product);
+    }
+
+    // 재고 확인
+    public boolean checkStock(Long productId, int quantity){
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new EntityNotFoundException("상품이 없습니다. id=" + productId));
+        return product.getStockQty() >= quantity;
     }
 }
