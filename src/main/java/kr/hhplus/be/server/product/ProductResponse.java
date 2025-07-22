@@ -7,16 +7,16 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class ProductResponse {
-    private Long id;
-    private String name;
-    private Integer price;
-    private Integer stockQuantity;
+    private Long productId;
+    private String productName;
+    private Integer productPrice;
+    private Integer stockQty;
 
     // Product 엔티티로부터 DTO 생성
     public ProductResponse(Product product) {
-        this.id = product.getProductId();
-        this.name = product.getProductName();
-        this.price = product.getProductPrice();
-        this.stockQuantity = product.getStockQty();
+        this.productId = product.getProductId();
+        this.productName = product.getProductName();
+        this.productPrice = product.getProductPrice();
+        this.stockQty = product.getStockQty();
     }
 }
