@@ -16,7 +16,7 @@ public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY) // AUTO_INCREMENT
     @Column(name = "product_id")
-    private Long id;
+    private Long productId;
 
     @Column(name = "product_name", nullable = false, length = 100)
     private String productName;
