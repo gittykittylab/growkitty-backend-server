@@ -31,6 +31,7 @@ public class OrderService {
     }
 
     // 주문 상태 업데이트
+    @Transactional
     public void updateOrderStatus(Long orderId, String status){
         Order order = getOrder(orderId);
         order.setOrderStatus(status);
