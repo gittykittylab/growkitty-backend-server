@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.order;
+package kr.hhplus.be.server.order.domain;
 
 import jakarta.persistence.*;
 import lombok.Getter;
