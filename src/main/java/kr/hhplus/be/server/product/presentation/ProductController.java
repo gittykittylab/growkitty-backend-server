@@ -43,4 +43,15 @@ public class ProductController {
         boolean hasStock = productService.checkStock(productId, quantity);
         return ResponseEntity.ok(hasStock);
     }
+
+    /**
+     * 재고 감소
+     */
+    @PatchMapping("/{productId}/stock")
+    public ResponseEntity<Void> decreaseStock(
+            @PathVariable Long productId,
+            @RequestParam int quantity) {
+        productService.decreaseStock(productId, quantity);
+        return ResponseEntity.ok().build();
+    }
 }
