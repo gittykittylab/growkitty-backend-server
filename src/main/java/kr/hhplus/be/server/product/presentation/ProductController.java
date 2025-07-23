@@ -23,4 +23,13 @@ public class ProductController {
         List<ProductResponse> products = productService.getProducts();
         return ResponseEntity.ok(products);
     }
+
+    /**
+     * 상품 상세 조회
+     */
+    @GetMapping("/{productId}")
+    public ResponseEntity<ProductDetailResponse> getProduct(@PathVariable Long productId) {
+        ProductDetailResponse product = productService.getProductById(productId);
+        return ResponseEntity.ok(product);
+    }
 }
