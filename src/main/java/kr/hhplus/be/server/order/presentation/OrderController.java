@@ -55,5 +55,21 @@ public class OrderController {
 
         return ResponseEntity.ok(orderResponse);
     }
+    /**
+     * 주문 상태 업데이트
+     * PATCH /api/orders/{orderId}/status
+     */
+    @PatchMapping("/{orderId}/status")
+    public ResponseEntity<Void> updateOrderStatus(
+            @PathVariable Long orderId,
+            @RequestParam String status) {
 
+        log.info("주문 상태 업데이트 요청 - orderId: {}, status: {}", orderId, status);
+
+        orderService.updateOrderStatus(orderId, status);
+
+        log.info("주문 상태 업데이트 완료 - orderId: {}, status: {}", orderId, status);
+
+        return ResponseEntity.ok().build();
+    }
 }
