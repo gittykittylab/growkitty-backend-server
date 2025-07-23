@@ -1,6 +1,7 @@
 package kr.hhplus.be.server.payment.domain;
 
 import jakarta.persistence.*;
+import kr.hhplus.be.server.common.exception.PaymentException;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -42,4 +43,33 @@ public class Payment {
 
     @Column(name = "paid_dt", nullable = false)
     private LocalDateTime paidDt = LocalDateTime.now();
+
+    // 결제 취소 메서드
+    public void cancel() {
+        if (this.paymentStatus != PaymentStatus.PAID) {
+            throw new PaymentException("이미 취소되었거나 실패한 결제입니다.");
+        }
+        this.paymentStatus = PaymentStatus.CANCELLED;
+    }
+
+    // 결제 실패 처리 메서드
+    public void markAsFailed() {
+        this.paymentStatus = PaymentStatus.FAILED;
+    }
+
+    // 결제 객체 생성
+    public static Payment createPayment(Long orderId, Long userId, Integer paidAmount,
+                                        Integer pointUsedAmount, Integer discountAmount,
+                                        Long couponId) {
+        return Payment.builder()
+                .orderId(orderId)
+                .userId(userId)
+                .paidAmount(paidAmount)
+                .pointUsedAmount(pointUsedAmount)
+                .discountAmount(discountAmount)
+                .couponId(couponId)
+                .paymentStatus(PaymentStatus.PAID)
+                .paidDt(LocalDateTime.now())
+                .build();
+    }
 }
