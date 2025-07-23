@@ -1,6 +1,7 @@
 package kr.hhplus.be.server.order;
 
 import jakarta.persistence.*;
+import kr.hhplus.be.server.product.Product;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -43,4 +44,18 @@ public class OrderItem {
 
     @Column(name = "applied_coupon_id")
     private Long appliedCouponId;
+
+    // 주문 상품
+    public static OrderItem createOrderItem(Product product, int orderQuantity) {
+
+        OrderItem orderItem = new OrderItem();
+        orderItem.setProductId(product.getProductId());  // 주문 당시의 상품 상태를 그대로 보존
+        orderItem.setProductName(product.getProductName());
+        orderItem.setProductPrice(product.getProductPrice());
+        orderItem.setOrderPrice(product.getProductPrice());
+        orderItem.setOrderQty(orderQuantity);
+        orderItem.setItemDiscountAmount(0);  // 할인 없음
+
+        return orderItem;
+    }
 }
