@@ -30,4 +30,10 @@ public class OrderService {
         return  orderRepository.save(order);
     }
 
+    // 주문 상태 업데이트
+    public void updateOrderStatus(Long orderId, String status){
+        Order order = getOrder(orderId);
+        order.setOrderStatus(status);
+    }
+
 }
