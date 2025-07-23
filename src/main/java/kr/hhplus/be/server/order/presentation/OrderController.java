@@ -38,4 +38,22 @@ public class OrderController {
         return ResponseEntity.ok(orderResponse);
     }
 
+    /**
+     * 주문 조회
+     * GET /api/orders/{orderId}
+     */
+    @GetMapping("/{orderId}")
+    public ResponseEntity<OrderResponse> getOrder(
+            @PathVariable Long orderId) {
+
+        log.info("주문 조회 요청 - orderId: {}", orderId);
+
+        Order order = orderService.getOrder(orderId);
+        OrderResponse orderResponse = new OrderResponse(order);
+
+        log.info("주문 조회 완료 - orderId: {}, status: {}", orderId, order.getOrderStatus());
+
+        return ResponseEntity.ok(orderResponse);
+    }
+
 }
