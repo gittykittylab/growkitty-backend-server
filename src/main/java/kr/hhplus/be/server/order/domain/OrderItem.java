@@ -1,7 +1,7 @@
 package kr.hhplus.be.server.order.domain;
 
 import jakarta.persistence.*;
-import kr.hhplus.be.server.product.Product;
+import kr.hhplus.be.server.product.domain.Product;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
