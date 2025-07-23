@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.user;
+package kr.hhplus.be.server.user.dto.response;
 
 public class PointBalanceResponse {
     private final int pointBalance;

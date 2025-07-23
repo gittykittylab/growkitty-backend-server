@@ -1,6 +1,10 @@
-package kr.hhplus.be.server.user;
+package kr.hhplus.be.server.user.application;
 
 import kr.hhplus.be.server.common.exception.EntityNotFoundException;
+import kr.hhplus.be.server.user.domain.PointHistory;
+import kr.hhplus.be.server.user.infrastructure.PointHistoryRepository;
+import kr.hhplus.be.server.user.domain.User;
+import kr.hhplus.be.server.user.infrastructure.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

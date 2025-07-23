@@ -10,7 +10,7 @@ import kr.hhplus.be.server.order.dto.response.OrderResponse;
 import kr.hhplus.be.server.payment.application.PaymentService;
 import kr.hhplus.be.server.product.dto.response.ProductDetailResponse;
 import kr.hhplus.be.server.product.application.ProductService;
-import kr.hhplus.be.server.user.UserService;
+import kr.hhplus.be.server.user.application.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
