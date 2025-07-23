@@ -13,4 +13,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class OrderService {
     private final OrderRepository orderRepository;
 
+    // 주문 조회
+    public Order getOrder(Long orderId){
+        return orderRepository.findById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("주문을 찾을 수 없습니다. id=" + orderId));
+    }
 }
