@@ -1,4 +1,5 @@
-package kr.hhplus.be.server.product;
+package kr.hhplus.be.server.product.dto.response;
+import kr.hhplus.be.server.product.domain.Product;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;

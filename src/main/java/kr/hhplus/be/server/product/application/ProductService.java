@@ -1,6 +1,10 @@
-package kr.hhplus.be.server.product;
+package kr.hhplus.be.server.product.application;
 
 import kr.hhplus.be.server.common.exception.EntityNotFoundException;
+import kr.hhplus.be.server.product.domain.Product;
+import kr.hhplus.be.server.product.dto.response.ProductDetailResponse;
+import kr.hhplus.be.server.product.infrastructure.ProductRepository;
+import kr.hhplus.be.server.product.dto.response.ProductResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;

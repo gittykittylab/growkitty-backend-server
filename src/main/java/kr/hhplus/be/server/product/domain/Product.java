@@ -1,12 +1,10 @@
-package kr.hhplus.be.server.product;
+package kr.hhplus.be.server.product.domain;
 
 import jakarta.persistence.*;
 import kr.hhplus.be.server.common.exception.InsufficientStockException;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import javax.naming.InsufficientResourcesException;
 
 @Entity
 @Table(name = "products")
