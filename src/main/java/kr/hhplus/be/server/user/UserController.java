@@ -19,4 +19,14 @@ public class UserController {
         userService.chargePoint(userId, amount);
         return ResponseEntity.ok().build();
     }
+
+    // 포인트 사용
+    @PostMapping("/{userId}/points/use")
+    public ResponseEntity<Void> usePoint(
+            @PathVariable Long userId,
+            @RequestParam int amount) {
+
+        userService.usePoint(userId, amount);
+        return ResponseEntity.ok().build();
+    }
 }
