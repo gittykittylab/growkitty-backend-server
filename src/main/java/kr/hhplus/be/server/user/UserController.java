@@ -1,4 +1,6 @@
 package kr.hhplus.be.server.user;
+
+import kr.hhplus.be.server.common.exception.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -28,5 +30,14 @@ public class UserController {
 
         userService.usePoint(userId, amount);
         return ResponseEntity.ok().build();
+    }
+
+    // 포인트 잔액 조회
+    @GetMapping("/{userId}/points")
+    public ResponseEntity<PointBalanceResponse> getPointBalance(@PathVariable Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다. id=" + userId));
+
+        return ResponseEntity.ok(new PointBalanceResponse(user.getPointBalance()));
     }
 }
