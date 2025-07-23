@@ -11,7 +11,6 @@ import java.time.LocalDateTime;
 @Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class Payment {
 
     @Id
@@ -61,15 +60,16 @@ public class Payment {
     public static Payment createPayment(Long orderId, Long userId, Integer paidAmount,
                                         Integer pointUsedAmount, Integer discountAmount,
                                         Long couponId) {
-        return Payment.builder()
-                .orderId(orderId)
-                .userId(userId)
-                .paidAmount(paidAmount)
-                .pointUsedAmount(pointUsedAmount)
-                .discountAmount(discountAmount)
-                .couponId(couponId)
-                .paymentStatus(PaymentStatus.PAID)
-                .paidDt(LocalDateTime.now())
-                .build();
+        Payment payment = new Payment();
+        payment.setOrderId(orderId);
+        payment.setUserId(userId);
+        payment.setPaidAmount(paidAmount);
+        payment.setPointUsedAmount(pointUsedAmount);
+        payment.setDiscountAmount(discountAmount);
+        payment.setCouponId(couponId);
+        payment.setPaymentStatus(PaymentStatus.PAID);
+        payment.setPaidDt(LocalDateTime.now());
+
+        return payment;
     }
 }
