@@ -32,4 +32,15 @@ public class ProductController {
         ProductDetailResponse product = productService.getProductById(productId);
         return ResponseEntity.ok(product);
     }
+
+    /**
+     * 재고 확인
+     */
+    @GetMapping("/{productId}/stock")
+    public ResponseEntity<Boolean> checkStock(
+            @PathVariable Long productId,
+            @RequestParam int quantity) {
+        boolean hasStock = productService.checkStock(productId, quantity);
+        return ResponseEntity.ok(hasStock);
+    }
 }
