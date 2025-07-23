@@ -56,8 +56,8 @@ public class Payment {
         this.paymentStatus = PaymentStatus.FAILED;
     }
 
-    // 결제 객체 생성
-    public static Payment createPayment(Long orderId, Long userId, Integer paidAmount,
+    // 결제 성공 객체 생성
+    public static Payment createSuccessedPayment(Long orderId, Long userId, Integer paidAmount,
                                         Integer pointUsedAmount, Integer discountAmount,
                                         Long couponId) {
         Payment payment = new Payment();
@@ -68,6 +68,21 @@ public class Payment {
         payment.setDiscountAmount(discountAmount);
         payment.setCouponId(couponId);
         payment.setPaymentStatus(PaymentStatus.PAID);
+        payment.setPaidDt(LocalDateTime.now());
+
+        return payment;
+    }
+
+    // 결제 실패 객체 생성
+    public static Payment createFailedPayment(Long orderId, Long userId, Integer paidAmount) {
+        Payment payment = new Payment();
+        payment.setOrderId(orderId);
+        payment.setUserId(userId);
+        payment.setPaidAmount(paidAmount);
+        payment.setPointUsedAmount(0); // 실패 시 포인트는 사용되지 않음
+        payment.setDiscountAmount(0);
+        payment.setCouponId(null);
+        payment.setPaymentStatus(PaymentStatus.FAILED);
         payment.setPaidDt(LocalDateTime.now());
 
         return payment;
