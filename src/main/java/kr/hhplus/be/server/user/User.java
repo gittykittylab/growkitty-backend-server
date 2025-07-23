@@ -21,8 +21,19 @@ public class User {
     @Column(name = "user_grade", nullable = false)
     private String userGrade = "NORMAL";
 
+    // 최대 포인트 한도 상수
+    private static final int MAX_POINT_BALANCE = 1000000;
+
     // 포인트 충전
     public void chargePoint(int amount){
+        if (amount <= 0) {
+            throw new IllegalArgumentException("충전 금액은 0보다 커야 합니다.");
+        }
+
+        if (this.pointBalance + amount > MAX_POINT_BALANCE) {
+            throw new IllegalArgumentException("최대 포인트 한도(" + MAX_POINT_BALANCE + ")를 초과할 수 없습니다.");
+        }
+
         this.pointBalance += amount;
     }
 
