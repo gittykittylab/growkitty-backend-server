@@ -13,6 +13,14 @@ docker-compose up -d
 ```
 ---
 
+### 🔍 아키텍처 README 
+
+실행 후, http://localhost:8080/swagger-ui/index.html 에서 API 명세를 확인할 수 있습니다.
+
+- 아키텍처 README 파일: [`docs/architecture/README.md`](./docs/architecture/README.md)
+
+---
+
 ### 🔍 Swagger API 명세
 
 실행 후, http://localhost:8080/swagger-ui/index.html 에서 API 명세를 확인할 수 있습니다.
