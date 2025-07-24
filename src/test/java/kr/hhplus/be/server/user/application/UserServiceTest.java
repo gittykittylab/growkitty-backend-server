@@ -43,6 +43,8 @@ public class UserServiceTest {
         testUser.setUserId(userId);
         testUser.setPointBalance(1000);
         testUser.setUserGrade("NORMAL");
+        // 기본 사용자는 존재한다고 가정
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
     }
 
     @Test
@@ -67,5 +69,18 @@ public class UserServiceTest {
         assertEquals(chargeAmount, savedHistory.getAmount());
         assertEquals("CHARGE", savedHistory.getPointType());
         assertNotNull(savedHistory.getCreatedAt());
+    }
+
+    @Test
+    @DisplayName("잘못된 충전 금액(0 이하)으로 충전 시 예외 발생")
+    void chargePoint_InvalidAmount() {
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> userService.chargePoint(userId, 0)
+        );
+
+        assertTrue(exception.getMessage().contains("충전 금액은 0보다 커야 합니다"));
+        //이력 저장 호출 안 됨
+        verify(pointHistoryRepository, never()).save(any());
     }
 }
