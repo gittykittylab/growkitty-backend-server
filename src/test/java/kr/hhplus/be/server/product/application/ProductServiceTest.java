@@ -108,4 +108,34 @@ public class ProductServiceTest {
         assertTrue(result);
         verify(productRepository).findById(productId);
     }
+
+    @Test
+    @DisplayName("재고가 부족할 경우 false를 반환한다")
+    void checkStockWithInsufficientStock() {
+        // given
+        int requestQuantity = 150;
+        when(productRepository.findById(productId)).thenReturn(Optional.of(testProduct));
+
+        // when
+        boolean result = productService.checkStock(productId, requestQuantity);
+
+        // then
+        assertFalse(result);
+        verify(productRepository).findById(productId);
+    }
+
+    @Test
+    @DisplayName("재고를 성공적으로 감소시킨다")
+    void decreaseStock() {
+        // given
+        int decreaseQuantity = 50;
+        when(productRepository.findById(productId)).thenReturn(Optional.of(testProduct));
+
+        // when
+        productService.decreaseStock(productId, decreaseQuantity);
+
+        // then
+        assertThat(testProduct.getStockQty()).isEqualTo(50);
+        verify(productRepository).findById(productId);
+    }
 }
