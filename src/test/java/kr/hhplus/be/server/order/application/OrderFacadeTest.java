@@ -165,4 +165,36 @@ public class OrderFacadeTest {
         // 트랜잭션 롤백 검증을 위한 부분은 단위 테스트에서 검증하기 어려움
         // 실제 롤백은 통합 테스트에서 검증
     }
+
+    @Test
+    @DisplayName("주문 조회 성공")
+    void getOrder_Success() {
+        // given
+        when(orderService.getOrder(orderId)).thenReturn(order);
+
+        // when
+        OrderResponse response = orderFacade.getOrder(orderId);
+
+        // then
+        // OrderService.getOrder가 올바른 파라미터(orderId)로 한 번 호출되었는지 검증
+        verify(orderService).getOrder(eq(orderId));
+
+        // 반환된 응답이 예상대로인지 확인 (선택적)
+        assertThat(response).isNotNull();
+        assertThat(response.getId()).isEqualTo(orderId);
+    }
+
+    @Test
+    @DisplayName("주문 상태 업데이트 성공")
+    void updateOrderStatus_Success() {
+        // given
+        String newStatus = "DELIVERED";
+
+        // when
+        orderFacade.updateOrderStatus(orderId, newStatus);
+
+        // then
+        // OrderService.updateOrderStatus가 올바른 파라미터(orderId, newStatus)로 한 번 호출되었는지 검증
+        verify(orderService).updateOrderStatus(eq(orderId), eq(newStatus));
+    }
 }
