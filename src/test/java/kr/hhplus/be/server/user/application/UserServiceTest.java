@@ -83,4 +83,22 @@ public class UserServiceTest {
         //이력 저장 호출 안 됨
         verify(pointHistoryRepository, never()).save(any());
     }
+
+    @Test
+    @DisplayName("최대 포인트 한도 초과 시 예외 발생")
+    void chargePoint_ExceedsMaxLimit() {
+        // given
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        int maxPointBalance = 1000000; // User 클래스에 정의된 MAX_POINT_BALANCE 값
+        int excessiveAmount = maxPointBalance - testUser.getPointBalance() + 1; // 한도를 1 초과하는 금액
+
+        // when & then
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> userService.chargePoint(userId, excessiveAmount)
+        );
+
+        assertTrue(exception.getMessage().contains("최대 포인트 한도"));
+        verify(pointHistoryRepository, never()).save(any());
+    }
 }
