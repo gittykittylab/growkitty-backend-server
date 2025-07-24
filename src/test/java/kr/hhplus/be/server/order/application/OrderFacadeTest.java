@@ -197,4 +197,59 @@ public class OrderFacadeTest {
         // OrderService.updateOrderStatus가 올바른 파라미터(orderId, newStatus)로 한 번 호출되었는지 검증
         verify(orderService).updateOrderStatus(eq(orderId), eq(newStatus));
     }
+
+    @Test
+    @DisplayName("결제 실패 시 재고 복구 처리 검증")
+    void createOrder_PaymentFailureTriggersStockRecovery() {
+        // given
+        when(productService.checkStock(anyLong(), anyInt())).thenReturn(true);
+        when(productService.getProductById(anyLong())).thenReturn(product);
+        when(orderService.createOrder(anyLong(), anyList())).thenReturn(order);
+
+        // 결제 처리 실패 설정
+        doThrow(new RuntimeException("결제 처리 오류"))
+                .when(paymentService).processPayment(anyLong(), anyLong(), anyInt(), anyInt());
+
+        // when & then
+        assertThrows(PaymentException.class, () -> orderFacade.createOrder(orderRequest));
+
+        // 결제 실패 시 흐름 검증
+        verify(productService).checkStock(eq(productId), eq(quantity));
+        verify(productService).decreaseStock(eq(productId), eq(quantity));
+        verify(orderService).createOrder(eq(userId), anyList());
+        verify(orderService).updateOrderStatus(eq(orderId), eq("PAYMENT_FAILED"));
+        verify(paymentService).saveFailedPayment(eq(orderId), eq(userId), eq(totalAmount));
+
+        // 재고 복구 메서드 호출 검증 - 핵심 테스트 부분
+        verify(productService).recoverStocks(anyList());
+    }
+
+    @Test
+    @DisplayName("결제 실패 후 재고 복구 실패 시에도 PaymentException 발생")
+    void createOrder_StockRecoveryFailureAfterPaymentFailure() {
+        // given
+        when(productService.checkStock(anyLong(), anyInt())).thenReturn(true);
+        when(productService.getProductById(anyLong())).thenReturn(product);
+        when(orderService.createOrder(anyLong(), anyList())).thenReturn(order);
+
+        // 결제 처리 실패 설정
+        doThrow(new RuntimeException("결제 처리 오류"))
+                .when(paymentService).processPayment(anyLong(), anyLong(), anyInt(), anyInt());
+
+        // 재고 복구 실패 설정
+        doThrow(new RuntimeException("재고 복구 오류"))
+                .when(productService).recoverStocks(anyList());
+
+        // when & then
+        PaymentException exception = assertThrows(PaymentException.class,
+                () -> orderFacade.createOrder(orderRequest));
+
+        // 예외 메시지 검증
+        assertThat(exception.getMessage()).contains("결제 처리 실패");
+
+        // 메서드 호출 검증
+        verify(orderService).updateOrderStatus(eq(orderId), eq("PAYMENT_FAILED"));
+        verify(paymentService).saveFailedPayment(eq(orderId), eq(userId), eq(totalAmount));
+        verify(productService).recoverStocks(anyList());
+    }
 }
