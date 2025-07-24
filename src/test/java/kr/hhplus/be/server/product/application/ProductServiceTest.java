@@ -1,5 +1,6 @@
 package kr.hhplus.be.server.product.application;
 
+import kr.hhplus.be.server.common.exception.InsufficientStockException;
 import kr.hhplus.be.server.product.domain.Product;
 import kr.hhplus.be.server.product.dto.response.ProductDetailResponse;
 import kr.hhplus.be.server.product.dto.response.ProductResponse;
@@ -136,6 +137,23 @@ public class ProductServiceTest {
 
         // then
         assertThat(testProduct.getStockQty()).isEqualTo(50);
+        verify(productRepository).findById(productId);
+    }
+
+    @Test
+    @DisplayName("재고보다 많은 수량을 감소시키려 할 경우 예외가 발생한다")
+    void decreaseStockWithInsufficientStock() {
+        // given
+        int decreaseQuantity = 150;
+        when(productRepository.findById(productId)).thenReturn(Optional.of(testProduct));
+
+        // when & then
+        assertThrows(InsufficientStockException.class, () -> {
+            productService.decreaseStock(productId, decreaseQuantity);
+        });
+
+        // 재고는 변경되지 않아야 함
+        assertThat(testProduct.getStockQty()).isEqualTo(100);
         verify(productRepository).findById(productId);
     }
 }
