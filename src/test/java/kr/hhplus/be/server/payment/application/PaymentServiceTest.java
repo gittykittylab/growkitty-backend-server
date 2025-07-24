@@ -71,4 +71,35 @@ public class PaymentServiceTest {
         assertThat(exception.getMessage()).contains("결제 처리 실패");
         verify(paymentRepository, times(1)).save(any(Payment.class));
     }
+
+    @Test
+    @DisplayName("결제 실패 정보 저장 테스트")
+    void saveFailedPayment_Success() {
+        // Given
+        Payment expectedPayment = Payment.createFailedPayment(orderId, userId, totalAmount);
+        when(paymentRepository.save(any(Payment.class))).thenReturn(expectedPayment);
+
+        // When
+        Payment result = paymentService.saveFailedPayment(orderId, userId, totalAmount);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getPaymentStatus()).isEqualTo(PaymentStatus.FAILED);
+        verify(paymentRepository).save(any(Payment.class));
+    }
+
+    @Test
+    @DisplayName("결제 실패 정보 저장 실패 시 예외 발생")
+    void saveFailedPayment_ThrowsException() {
+        // Given
+        when(paymentRepository.save(any(Payment.class))).thenThrow(new RuntimeException("DB 오류"));
+
+        // When & Then
+        PaymentException exception = assertThrows(PaymentException.class, () -> {
+            paymentService.saveFailedPayment(orderId, userId, totalAmount);
+        });
+
+        assertThat(exception.getMessage()).contains("결제 실패 정보 저장 실패");
+        verify(paymentRepository).save(any(Payment.class));
+    }
 }
