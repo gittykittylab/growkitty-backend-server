@@ -85,11 +85,11 @@ public class OrderFacade {
 
         } catch (Exception e) {
             // 결제 실패 시 결제 실패 정보 저장
-            paymentService.saveFailedPayment(
-                    order.getId(),
-                    userId,
-                    order.getTotalAmount()
-            );
+//            paymentService.saveFailedPayment(
+//                    order.getId(),
+//                    userId,
+//                    order.getTotalAmount()
+//            );
 
             // 주문 상태 업데이트
             orderService.updateOrderStatus(order.getId(), "PAYMENT_FAILED");

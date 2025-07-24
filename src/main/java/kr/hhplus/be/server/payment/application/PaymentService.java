@@ -34,20 +34,20 @@ public class PaymentService {
         }
     }
     // 결제 실패 정보 저장
-    @Transactional
-    public Payment saveFailedPayment(Long orderId, Long userId, int totalAmount) {
-        try {
-            // 실패한 결제 객체 생성
-            Payment payment = Payment.createFailedPayment(
-                    orderId,
-                    userId,
-                    totalAmount
-            );
-
-            return paymentRepository.save(payment);
-
-        } catch (Exception e) {
-            throw new PaymentException("결제 실패 정보 저장 실패: " + e.getMessage());
-        }
-    }
+//    @Transactional
+//    public Payment saveFailedPayment(Long orderId, Long userId, int totalAmount) {
+//        try {
+//            // 실패한 결제 객체 생성
+//            Payment payment = Payment.createFailedPayment(
+//                    orderId,
+//                    userId,
+//                    totalAmount
+//            );
+//
+//            return paymentRepository.save(payment);
+//
+//        } catch (Exception e) {
+//            throw new PaymentException("결제 실패 정보 저장 실패: " + e.getMessage());
+//        }
+//    }
 }

@@ -29,17 +29,17 @@ public class PaymentController {
 
         return ResponseEntity.ok(PaymentResponse.fromEntity(payment));
     }
-    /**
-     * 결제 실패 처리
-     */
-    @PostMapping("/failed")
-    public ResponseEntity<PaymentResponse> saveFailedPayment(@RequestBody PaymentRequest request) {
-        Payment payment = paymentService.saveFailedPayment(
-                request.getOrderId(),
-                1L, // 임시로 하드코딩
-                request.getAmount()
-        );
-
-        return ResponseEntity.ok(PaymentResponse.fromEntity(payment));
-    }
+//    /**
+//     * 결제 실패 처리
+//     */
+//    @PostMapping("/failed")
+//    public ResponseEntity<PaymentResponse> saveFailedPayment(@RequestBody PaymentRequest request) {
+//        Payment payment = paymentService.saveFailedPayment(
+//                request.getOrderId(),
+//                1L, // 임시로 하드코딩
+//                request.getAmount()
+//        );
+//
+//        return ResponseEntity.ok(PaymentResponse.fromEntity(payment));
+//    }
 }
