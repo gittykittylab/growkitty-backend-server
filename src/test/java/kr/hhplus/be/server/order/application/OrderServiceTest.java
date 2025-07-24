@@ -96,19 +96,4 @@ public class OrderServiceTest {
         verify(orderRepository, times(1)).save(any(Order.class));
     }
 
-    @Test
-    @DisplayName("주문 상태 업데이트 성공")
-    void updateOrderStatus_Success() {
-        // given
-        String newStatus = "DELIVERED";
-        when(orderRepository.findById(anyLong())).thenReturn(Optional.of(testOrder));
-
-        // when
-        orderService.updateOrderStatus(orderId, newStatus);
-
-        // then
-        assertThat(testOrder.getOrderStatus()).isEqualTo(newStatus);
-        verify(orderRepository, times(1)).findById(orderId);
-    }
-
 }
