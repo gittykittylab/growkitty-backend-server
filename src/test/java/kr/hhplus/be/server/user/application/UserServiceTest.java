@@ -125,4 +125,20 @@ public class UserServiceTest {
         assertEquals("USE", savedHistory.getPointType());
         assertNotNull(savedHistory.getCreatedAt());
     }
+
+    @Test
+    @DisplayName("잔액 부족 시 포인트 사용 예외 발생")
+    void usePoint_InsufficientBalance() {
+        // given
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+
+        // when & then
+        InsufficientBalanceException exception = assertThrows(
+                InsufficientBalanceException.class,
+                () -> userService.usePoint(userId, 2000)
+        );
+
+        assertTrue(exception.getMessage().contains("포인트가 부족합니다"));
+        verify(pointHistoryRepository, never()).save(any());
+    }
 }
