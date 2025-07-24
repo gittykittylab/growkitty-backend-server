@@ -1,5 +1,6 @@
 package kr.hhplus.be.server.payment.application;
 
+import kr.hhplus.be.server.common.exception.PaymentException;
 import kr.hhplus.be.server.payment.domain.Payment;
 import kr.hhplus.be.server.payment.domain.PaymentStatus;
 import kr.hhplus.be.server.payment.infrastructure.PaymentRepository;
@@ -11,6 +12,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -53,6 +55,20 @@ public class PaymentServiceTest {
         assertThat(result.getPointUsedAmount()).isEqualTo(pointAmount);
         assertThat(result.getPaymentStatus()).isEqualTo(PaymentStatus.PAID);
 
+        verify(paymentRepository, times(1)).save(any(Payment.class));
+    }
+    @Test
+    @DisplayName("결제 처리 실패 시 예외 발생 테스트")
+    void processPayment_ThrowsException() {
+        // Given
+        when(paymentRepository.save(any(Payment.class))).thenThrow(new RuntimeException("DB 오류"));
+
+        // When & Then
+        PaymentException exception = assertThrows(PaymentException.class, () -> {
+            paymentService.processPayment(orderId, userId, totalAmount, pointAmount);
+        });
+
+        assertThat(exception.getMessage()).contains("결제 처리 실패");
         verify(paymentRepository, times(1)).save(any(Payment.class));
     }
 }
