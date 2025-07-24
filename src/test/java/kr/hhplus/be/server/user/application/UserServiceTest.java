@@ -5,6 +5,7 @@ import kr.hhplus.be.server.common.exception.EntityNotFoundException;
 import kr.hhplus.be.server.common.exception.InsufficientBalanceException;
 import kr.hhplus.be.server.user.domain.PointHistory;
 import kr.hhplus.be.server.user.domain.User;
+import kr.hhplus.be.server.user.dto.response.PointBalanceResponse;
 import kr.hhplus.be.server.user.infrastructure.PointHistoryRepository;
 import kr.hhplus.be.server.user.infrastructure.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +46,23 @@ public class UserServiceTest {
         testUser.setUserGrade("NORMAL");
         // 기본 사용자는 존재한다고 가정
         when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+    }
+
+    @Test
+    @DisplayName("포인트 잔액 조회 성공")
+    void getPointBalance_Success() {
+        // given
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+
+        // when
+        PointBalanceResponse response = userService.getPointBalance(userId);
+
+        // then
+        assertNotNull(response);
+        assertEquals(1000, response.getPointBalance());
+
+        // 사용자 조회 검증
+        verify(userRepository).findById(userId);
     }
 
     @Test
