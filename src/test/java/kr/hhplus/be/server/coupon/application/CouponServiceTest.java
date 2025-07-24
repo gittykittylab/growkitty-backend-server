@@ -84,4 +84,16 @@ class CouponServiceTest {
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("쿠폰이 모두 소진되었습니다.");
     }
+    @Test
+    @DisplayName("중복 발급 시 예외발생")
+    void coupon_already_issued() {
+        // given
+        when(couponRepository.countByPolicyId(policyId)).thenReturn(50L);
+        when(couponRepository.existsByUserIdAndPolicyId(userId, policyId)).thenReturn(true);
+
+        // when & then
+        assertThatThrownBy(() -> couponService.issueFirstComeCoupon(policyId, userId))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("이미 발급받은 쿠폰입니다.");
+    }
 }
