@@ -77,4 +77,22 @@ public class OrderServiceTest {
         assertThat(result.getOrderItems().size()).isEqualTo(2);
         verify(orderRepository, times(1)).findById(orderId);
     }
+
+    @Test
+    @DisplayName("주문 생성 성공")
+    void createOrder_Success() {
+        // given
+        when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
+
+        // when
+        Order result = orderService.createOrder(userId, testOrderItems);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getUserId()).isEqualTo(userId);
+        assertThat(result.getOrderItems().size()).isEqualTo(2);
+        assertThat(result.getTotalAmount()).isEqualTo(40000); // 10000*2 + 20000*1
+        assertThat(result.getOrderStatus()).isEqualTo("PENDING");
+        verify(orderRepository, times(1)).save(any(Order.class));
+    }
 }
