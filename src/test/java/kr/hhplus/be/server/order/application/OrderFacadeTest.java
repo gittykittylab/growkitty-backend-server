@@ -115,4 +115,22 @@ public class OrderFacadeTest {
         verify(userService, never()).usePoint(anyLong(), anyInt());
     }
 
+    @Test
+    @DisplayName("주문 생성 실패 - 재고 부족")
+    void createOrder_InsufficientStockFails() {
+        // given
+        when(productService.checkStock(anyLong(), anyInt())).thenReturn(false);
+
+        // when & then
+        assertThrows(InsufficientStockException.class, () ->
+                orderFacade.createOrder(orderRequest)
+        );
+
+        // 재고 부족 시 흐름 검증
+        verify(productService).checkStock(eq(productId), eq(quantity));
+        verify(productService, never()).decreaseStock(anyLong(), anyInt());
+        verify(orderService, never()).createOrder(anyLong(), anyList());
+        verify(userService, never()).usePoint(anyLong(), anyInt());
+        verify(paymentService, never()).processPayment(anyLong(), anyLong(), anyInt(), anyInt());
+    }
 }
