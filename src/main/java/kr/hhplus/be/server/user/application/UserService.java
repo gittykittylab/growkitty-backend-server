@@ -2,6 +2,7 @@ package kr.hhplus.be.server.user.application;
 
 import kr.hhplus.be.server.common.exception.EntityNotFoundException;
 import kr.hhplus.be.server.user.domain.PointHistory;
+import kr.hhplus.be.server.user.dto.response.PointBalanceResponse;
 import kr.hhplus.be.server.user.infrastructure.PointHistoryRepository;
 import kr.hhplus.be.server.user.domain.User;
 import kr.hhplus.be.server.user.infrastructure.UserRepository;
@@ -17,7 +18,13 @@ import java.time.LocalDateTime;
 public class UserService {
     private final UserRepository userRepository;
     private final PointHistoryRepository pointHistoryRepository;
+    // 포인트 잔액 조회
+    public PointBalanceResponse getPointBalance(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다. id=" + userId));
 
+        return new PointBalanceResponse(user.getPointBalance());
+    }
     // 포인트 충전
     @Transactional
     public void chargePoint(Long userId, int amount){

@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
-    private final UserRepository userRepository;
 
     // 포인트 충전
     @PostMapping("/{userId}/points/charge")
@@ -39,9 +38,7 @@ public class UserController {
     // 포인트 잔액 조회
     @GetMapping("/{userId}/points")
     public ResponseEntity<PointBalanceResponse> getPointBalance(@PathVariable Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다. id=" + userId));
-
-        return ResponseEntity.ok(new PointBalanceResponse(user.getPointBalance()));
+        PointBalanceResponse response = userService.getPointBalance(userId);
+        return ResponseEntity.ok(response);
     }
 }
