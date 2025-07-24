@@ -30,23 +30,31 @@ Controller → (Facade) → Service → Repository → DB
 
 ## 🛠  설계를 반영한 주요 변경점
 
-### 1. **Controller 의존성 축소**
+### 1. **Repository에 직접 의존**
+
+- `UserController`는 포인트 잔액 조회 시 `Repository`를 직접 호출합니다.
+- 이는 **DIP 원칙을 일부 위반**할 수 있는 구조지만, 다음과 같은 상황을 고려하였습니다:
+  
+>- 단순한 조회 로직의 경우, 별도의 Service 계층을 도입하는 것은 오히려 과한 추상화가 될 수 있음
+>- 제한된 시간과 구현 역량 내에서 구조적 이상보다 **개발 효율성과 현실적인 구현 가능성**을 우선 고려함
+>- 향후 외부 API 연동 등 구조 변화가 필요한 시점에 **추상화를 도입하는 것이 더 합리적**이라 판단
+
+### 2. **Repository가 `infrastructure`에 위치한 이유**
+#### ✅ 구현에 해당하므로 infrastructure 영역에 위치
+- 본 프로젝트에서는 직접 구현한 RepositoryImpl 없이 JpaRepository를 **직접 상속**합니다.
+- Repository 인터페이스를 통해 DB에 접근하는 것은 **비즈니스 로직이 아닌 기술 구현**에 가까운 역할입니다.
+- 이 경우, 해당 인터페이스 자체가 곧 DB 접근 구현체의 역할을 하므로 infrastructure 영역에 두는 것이 자연스럽다고 생각했습니다.
+
+### 3. **Controller 의존성 축소**
 
 * `OrderController`가 `OrderService`, `OrderFacade`를 모두 의존하던 구조에서 → `Facade`로 통합
 * 단일 진입점 구성으로 **Controller의 책임 명확화**
-* 
-### 2. **Controller의 직접 의존 제거 및 계층 분리**
+  
+### 4. **Controller의 직접 의존 제거 및 계층 분리**
 
 * `UserController`가 `UserRepository`를 직접 참조하던 구조에서 → 해당 로직을`application 계층으로 이전`
 * 책임 분리와 계층 간 역할 명확해짐
 
-### 3. **Repository 직접 의존에 대한 실용적 선택**
-
-- `UserController`는 포인트 잔액 조회 시 `Repository`를 직접 호출합니다.
-- 이는 **DIP 원칙을 일부 위반**할 수 있는 구조지만, 다음과 같은 상황을 고려하였습니다:
->- 단순한 조회 로직의 경우, 별도의 Service 계층을 도입하는 것은 오히려 과한 추상화가 될 수 있음
->- 제한된 시간과 구현 역량 내에서 구조적 이상보다 **개발 효율성과 현실적인 구현 가능성**을 우선 고려함
->- 향후 외부 API 연동 등 구조 변화가 필요한 시점에 **추상화를 도입하는 것이 더 합리적**이라 판단
 
 ## ⚠️ 위반 사항 및 보완 포인트
 
