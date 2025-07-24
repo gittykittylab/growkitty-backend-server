@@ -72,4 +72,16 @@ class CouponServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.getCouponId()).isEqualTo(expectedCoupon.getCouponId());
     }
+
+    @Test
+    @DisplayName("쿠폰 소진 시 예외발생")
+    void coupon_sold_out() {
+        // given
+        when(couponRepository.countByPolicyId(policyId)).thenReturn(100L);
+
+        // when & then
+        assertThatThrownBy(() -> couponService.issueFirstComeCoupon(policyId, userId))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("쿠폰이 모두 소진되었습니다.");
+    }
 }
