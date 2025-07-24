@@ -141,4 +141,19 @@ public class UserServiceTest {
         assertTrue(exception.getMessage().contains("포인트가 부족합니다"));
         verify(pointHistoryRepository, never()).save(any());
     }
+    @Test
+    @DisplayName("잘못된 사용 금액(0 이하)으로 사용 시 예외 발생")
+    void usePoint_InvalidAmount() {
+        // given
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+
+        // when & then
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> userService.usePoint(userId, 0)
+        );
+
+        assertTrue(exception.getMessage().contains("사용 금액은 0보다 커야 합니다"));
+        verify(pointHistoryRepository, never()).save(any());
+    }
 }
