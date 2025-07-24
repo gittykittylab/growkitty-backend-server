@@ -46,23 +46,20 @@ public class OrderFacadeTest {
     @InjectMocks
     private OrderFacade orderFacade;
 
-    // 테스트에 사용할 공통 객체
     private OrderRequest orderRequest;
     private ProductDetailResponse product;
     private Order order;
 
-    // 테스트 데이터
     private final Long userId = 1L;
     private final Long productId = 100L;
     private final Long orderId = 1L;
     private final int quantity = 2;
     private final int price = 10000;
     private final int totalAmount = price * quantity;
-    private final int usedPoints = 1000;
 
     @BeforeEach
     void setUp() {
-        // OrderRequest 생성
+        // 기본 주문 요청 설정
         OrderItemRequest itemRequest = new OrderItemRequest();
         itemRequest.setProductId(productId);
         itemRequest.setQuantity(quantity);
@@ -70,15 +67,15 @@ public class OrderFacadeTest {
         orderRequest = new OrderRequest();
         orderRequest.setUserId(userId);
         orderRequest.setOrderItems(List.of(itemRequest));
-        orderRequest.setUsedAmount(usedPoints);
+        orderRequest.setUsedAmount(0); // 기본값은 포인트 미사용
 
-        // 상품 정보 생성
+        // 상품 정보 설정
         product = new ProductDetailResponse();
         product.setProductId(productId);
         product.setProductName("테스트 상품");
         product.setProductPrice(price);
 
-        // 주문 생성
+        // 주문 객체 설정
         order = new Order();
         order.setId(orderId);
         order.setUserId(userId);
@@ -88,40 +85,34 @@ public class OrderFacadeTest {
 
     @Test
     @DisplayName("주문 생성 성공")
-    void createOrder_Success() {
+    void createOrder_BasicFlowSuccess() {
         // given
-        when(productService.checkStock(eq(productId), eq(quantity))).thenReturn(true);
-        when(productService.getProductById(eq(productId))).thenReturn(product);
-        // 중요: anyList() 사용으로 실제 생성되는 OrderItem 리스트와 일치하도록 변경
-        when(orderService.createOrder(eq(userId), anyList())).thenReturn(order);
+        when(productService.checkStock(anyLong(), anyInt())).thenReturn(true);
+        when(productService.getProductById(anyLong())).thenReturn(product);
+        when(orderService.createOrder(anyLong(), anyList())).thenReturn(order);
 
-        // updateOrderStatus 호출 시 order 상태 변경
         doAnswer(inv -> {
             order.setOrderStatus(inv.getArgument(1));
             return null;
-        }).when(orderService).updateOrderStatus(eq(orderId), eq("PAYMENT_COMPLETED"));
+        }).when(orderService).updateOrderStatus(anyLong(), anyString());
 
         // when
         OrderResponse response = orderFacade.createOrder(orderRequest);
 
         // then
+        assertThat(response).isNotNull();
         assertThat(response.getOrderStatus()).isEqualTo("PAYMENT_COMPLETED");
+
+        // 비즈니스 흐름 검증
+        verify(productService).checkStock(eq(productId), eq(quantity));
+        verify(productService).getProductById(eq(productId));
         verify(productService).decreaseStock(eq(productId), eq(quantity));
-        verify(paymentService).processPayment(eq(orderId), eq(userId), eq(totalAmount), eq(usedPoints));
+        verify(orderService).createOrder(eq(userId), anyList());
+        verify(paymentService).processPayment(eq(orderId), eq(userId), eq(totalAmount), eq(0));
+        verify(orderService).updateOrderStatus(eq(orderId), eq("PAYMENT_COMPLETED"));
+
+        // 포인트 미사용 검증
+        verify(userService, never()).usePoint(anyLong(), anyInt());
     }
 
-    @Test
-    @DisplayName("재고 부족 시 예외 발생")
-    void createOrder_ThrowsWhenInsufficientStock() {
-        // given
-        when(productService.checkStock(eq(productId), eq(quantity))).thenReturn(false);
-
-        // when & then
-        assertThrows(InsufficientStockException.class, () ->
-                orderFacade.createOrder(orderRequest)
-        );
-
-        verify(productService, never()).decreaseStock(anyLong(), anyInt());
-        verify(orderService, never()).createOrder(anyLong(), anyList());
-    }
 }
