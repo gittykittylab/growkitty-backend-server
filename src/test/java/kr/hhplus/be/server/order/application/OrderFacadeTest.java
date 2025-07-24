@@ -110,4 +110,18 @@ public class OrderFacadeTest {
         verify(paymentService).processPayment(eq(orderId), eq(userId), eq(totalAmount), eq(usedPoints));
     }
 
+    @Test
+    @DisplayName("재고 부족 시 예외 발생")
+    void createOrder_ThrowsWhenInsufficientStock() {
+        // given
+        when(productService.checkStock(eq(productId), eq(quantity))).thenReturn(false);
+
+        // when & then
+        assertThrows(InsufficientStockException.class, () ->
+                orderFacade.createOrder(orderRequest)
+        );
+
+        verify(productService, never()).decreaseStock(anyLong(), anyInt());
+        verify(orderService, never()).createOrder(anyLong(), anyList());
+    }
 }
