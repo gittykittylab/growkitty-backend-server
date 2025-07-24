@@ -157,4 +157,30 @@ public class OrderFacadeTest {
         verify(orderService, times(1)).updateOrderStatus(eq(orderId), eq("PAYMENT_COMPLETED"));
     }
 
+    @Test
+    @DisplayName("주문 생성 실패 - 재고 부족")
+    void createOrder_FailsWhenInsufficientStock() {
+        // given
+        Long productId = 100L;
+        int quantity = 10;
+
+        OrderItemRequest itemRequest = new OrderItemRequest();
+        itemRequest.setProductId(productId);
+        itemRequest.setQuantity(quantity);
+
+        OrderRequest orderRequest = new OrderRequest();
+        orderRequest.setUserId(1L);
+        orderRequest.setOrderItems(List.of(itemRequest));
+
+        when(productService.checkStock(productId, quantity)).thenReturn(false);
+
+        // when & then
+        assertThrows(InsufficientStockException.class, () ->
+                orderFacade.createOrder(orderRequest)
+        );
+
+        verify(productService).checkStock(productId, quantity);
+        verify(productService, never()).decreaseStock(anyLong(), anyInt());
+        verify(orderService, never()).createOrder(anyLong(), anyList());
+    }
 }
