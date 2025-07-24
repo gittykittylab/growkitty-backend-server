@@ -1,6 +1,7 @@
 package kr.hhplus.be.server.product.application;
 
 import kr.hhplus.be.server.product.domain.Product;
+import kr.hhplus.be.server.product.dto.response.ProductDetailResponse;
 import kr.hhplus.be.server.product.dto.response.ProductResponse;
 import kr.hhplus.be.server.product.infrastructure.ProductRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -72,6 +73,24 @@ public class ProductServiceTest {
         assertThat(result.get(1).getStockQty()).isEqualTo(200);
 
         verify(productRepository).findAll();
+    }
+
+    @Test
+    @DisplayName("상품 상세 정보 조회")
+    void getProductById() {
+        // given
+        when(productRepository.findById(productId)).thenReturn(Optional.of(testProduct));
+
+        // when
+        ProductDetailResponse result = productService.getProductById(productId);
+
+        // then
+        assertThat(result.getProductId()).isEqualTo(productId);
+        assertThat(result.getProductName()).isEqualTo("테스트 상품");
+        assertThat(result.getProductPrice()).isEqualTo(10000);
+        assertThat(result.getStockQty()).isEqualTo(100);
+
+        verify(productRepository).findById(productId);
     }
 
 }
