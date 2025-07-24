@@ -15,7 +15,7 @@ docker-compose up -d
 
 ### 🔍 아키텍처 README 
 
-실행 후, http://localhost:8080/swagger-ui/index.html 에서 API 명세를 확인할 수 있습니다.
+선택한 아키텍처에 대한 설명이 있는 README 파일을 확인할 수 있습니다.
 
 - 아키텍처 README 파일: [`docs/architecture/README.md`](./docs/architecture/README.md)
 
