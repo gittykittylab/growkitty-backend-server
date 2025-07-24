@@ -18,6 +18,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
 public class ProductServiceTest {
@@ -93,4 +94,18 @@ public class ProductServiceTest {
         verify(productRepository).findById(productId);
     }
 
+    @Test
+    @DisplayName("재고가 충분할 경우 true를 반환한다")
+    void checkStockWithSufficientStock() {
+        // given
+        int requestQuantity = 50;
+        when(productRepository.findById(productId)).thenReturn(Optional.of(testProduct));
+
+        // when
+        boolean result = productService.checkStock(productId, requestQuantity);
+
+        // then
+        assertTrue(result);
+        verify(productRepository).findById(productId);
+    }
 }
