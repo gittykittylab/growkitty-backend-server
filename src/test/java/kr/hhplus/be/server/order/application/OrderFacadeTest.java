@@ -133,4 +133,36 @@ public class OrderFacadeTest {
         verify(userService, never()).usePoint(anyLong(), anyInt());
         verify(paymentService, never()).processPayment(anyLong(), anyLong(), anyInt(), anyInt());
     }
+
+    @Test
+    @DisplayName("주문 생성 실패 - 결제 처리 오류")
+    void createOrder_PaymentFailureRollsBack() {
+        // given
+        when(productService.checkStock(anyLong(), anyInt())).thenReturn(true);
+        when(productService.getProductById(anyLong())).thenReturn(product);
+        when(orderService.createOrder(anyLong(), anyList())).thenReturn(order);
+
+        // 결제 처리 실패 설정
+        doThrow(new RuntimeException("결제 처리 오류"))
+                .when(paymentService).processPayment(anyLong(), anyLong(), anyInt(), anyInt());
+
+        doAnswer(inv -> {
+            order.setOrderStatus(inv.getArgument(1));
+            return null;
+        }).when(orderService).updateOrderStatus(anyLong(), anyString());
+
+        // when & then
+        assertThrows(PaymentException.class, () ->
+                orderFacade.createOrder(orderRequest)
+        );
+
+        // 결제 실패 시 흐름 검증
+        verify(productService).checkStock(eq(productId), eq(quantity));
+        verify(productService).decreaseStock(eq(productId), eq(quantity));
+        verify(orderService).createOrder(eq(userId), anyList());
+        verify(orderService).updateOrderStatus(eq(orderId), eq("PAYMENT_FAILED"));
+
+        // 트랜잭션 롤백 검증을 위한 부분은 단위 테스트에서 검증하기 어려움
+        // 실제 롤백은 통합 테스트에서 검증
+    }
 }
