@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class OrderController {
     private final OrderFacade orderFacade;
-    private final OrderService orderService;
+
     /**
      * 주문 생성
      * POST /api/orders
@@ -48,13 +48,14 @@ public class OrderController {
 
         log.info("주문 조회 요청 - orderId: {}", orderId);
 
-        Order order = orderService.getOrder(orderId);
-        OrderResponse orderResponse = new OrderResponse(order);
+        OrderResponse orderResponse = orderFacade.getOrder(orderId);
 
-        log.info("주문 조회 완료 - orderId: {}, status: {}", orderId, order.getOrderStatus());
+        log.info("주문 조회 완료 - orderId: {}, status: {}",
+                orderId, orderResponse.getOrderStatus());
 
         return ResponseEntity.ok(orderResponse);
     }
+
     /**
      * 주문 상태 업데이트
      * PATCH /api/orders/{orderId}/status
@@ -66,7 +67,7 @@ public class OrderController {
 
         log.info("주문 상태 업데이트 요청 - orderId: {}, status: {}", orderId, status);
 
-        orderService.updateOrderStatus(orderId, status);
+        orderFacade.updateOrderStatus(orderId, status);
 
         log.info("주문 상태 업데이트 완료 - orderId: {}, status: {}", orderId, status);
 

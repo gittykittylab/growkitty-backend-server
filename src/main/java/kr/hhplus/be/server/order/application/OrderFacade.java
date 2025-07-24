@@ -98,4 +98,16 @@ public class OrderFacade {
             throw new PaymentException("결제 처리 실패: " + e.getMessage());
         }
     }
+
+    // 주문 조회
+    public OrderResponse getOrder(Long orderId){
+        Order order = orderService.getOrder(orderId);
+        return new OrderResponse(order);
+    }
+
+    // 주문 상태 업데이트
+    @Transactional
+    public void updateOrderStatus(Long orderId, String status){
+        orderService.updateOrderStatus(orderId, status);
+    }
 }
