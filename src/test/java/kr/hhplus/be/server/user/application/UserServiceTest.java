@@ -101,4 +101,28 @@ public class UserServiceTest {
         assertTrue(exception.getMessage().contains("최대 포인트 한도"));
         verify(pointHistoryRepository, never()).save(any());
     }
+
+    @Test
+    @DisplayName("포인트 사용 성공 테스트")
+    void usePoint_Success() {
+        // given
+        int useAmount = 300;
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+
+        // when
+        userService.usePoint(userId, useAmount);
+
+        // then
+        assertEquals(700, testUser.getPointBalance());
+
+        // 이력 저장 검증
+        ArgumentCaptor<PointHistory> historyCaptor = ArgumentCaptor.forClass(PointHistory.class);
+        verify(pointHistoryRepository).save(historyCaptor.capture());
+
+        PointHistory savedHistory = historyCaptor.getValue();
+        assertEquals(userId, savedHistory.getUserId());
+        assertEquals(-useAmount, savedHistory.getAmount());
+        assertEquals("USE", savedHistory.getPointType());
+        assertNotNull(savedHistory.getCreatedAt());
+    }
 }
