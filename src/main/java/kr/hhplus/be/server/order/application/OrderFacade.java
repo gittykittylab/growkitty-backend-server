@@ -7,10 +7,9 @@ import kr.hhplus.be.server.order.domain.OrderItem;
 import kr.hhplus.be.server.order.dto.request.OrderItemRequest;
 import kr.hhplus.be.server.order.dto.request.OrderRequest;
 import kr.hhplus.be.server.order.dto.response.OrderResponse;
-import kr.hhplus.be.server.payment.application.PaymentService;
+import kr.hhplus.be.server.payment.application.PaymentFacade;
 import kr.hhplus.be.server.product.dto.response.ProductDetailResponse;
 import kr.hhplus.be.server.product.application.ProductService;
-import kr.hhplus.be.server.user.application.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,8 +23,7 @@ import java.util.List;
 public class OrderFacade {
     private final OrderService orderService;
     private final ProductService productService;
-    private final UserService userService;
-    private final PaymentService paymentService;
+    private final PaymentFacade paymentFacade;
 
     // 주문 생성 및 재고 처리
     @Transactional
@@ -67,17 +65,8 @@ public class OrderFacade {
         try {
             // 포인트 차감 (있는 경우)
             int usedPoints = request.getUsedAmount() != null ? request.getUsedAmount() : 0;
-            if (usedPoints > 0) {
-                userService.usePoint(userId, usedPoints);
-            }
-
-            // 결제 정보 저장
-            paymentService.processPayment(
-                    order.getId(),
-                    userId,
-                    order.getTotalAmount(),
-                    usedPoints
-            );
+            // 결제 처리 (PaymentFacade)
+            paymentFacade.processPayment(order.getId(), userId, order.getTotalAmount(), usedPoints);
 
             // 주문 상태 업데이트
             orderService.updateOrderStatus(order.getId(), "PAYMENT_COMPLETED");
@@ -89,21 +78,14 @@ public class OrderFacade {
             // 주문 상태 업데이트
             orderService.updateOrderStatus(order.getId(), "PAYMENT_FAILED");
 
-            // 결제 실패 정보 저장 (Payment 도메인 메서드 사용)
-            paymentService.saveFailedPayment(
-                    order.getId(),
-                    userId,
-                    order.getTotalAmount()
-            );
+            // 결제 실패 정보 저장 (PaymentFacade)
+            paymentFacade.handlePaymentFailure(order.getId(), userId, order.getTotalAmount());
 
             // 재고 복구 처리
             try {
                 productService.recoverStocks(orderItems);
-                log.info("재고 복구 완료: 주문 ID={}", order.getId());
             } catch (Exception recoveryEx) {
-                // 재고 복구 실패는 로깅만 하고 원래 예외를 유지
-                log.error("재고 복구 실패: 주문 ID={}, 오류={}",
-                        order.getId(), recoveryEx.getMessage(), recoveryEx);
+                log.error("재고 복구 실패: 주문 ID={}, 오류={}", order.getId(), recoveryEx.getMessage(), recoveryEx);
             }
 
             // 예외 발생
