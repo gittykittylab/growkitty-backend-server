@@ -7,6 +7,7 @@ import kr.hhplus.be.server.order.domain.OrderItem;
 import kr.hhplus.be.server.order.dto.request.OrderItemRequest;
 import kr.hhplus.be.server.order.dto.request.OrderRequest;
 import kr.hhplus.be.server.order.dto.response.OrderResponse;
+import kr.hhplus.be.server.payment.application.PaymentFacade;
 import kr.hhplus.be.server.payment.application.PaymentService;
 import kr.hhplus.be.server.product.application.ProductService;
 import kr.hhplus.be.server.product.dto.response.ProductDetailResponse;
@@ -38,10 +39,7 @@ public class OrderFacadeTest {
     private ProductService productService;
 
     @Mock
-    private UserService userService;
-
-    @Mock
-    private PaymentService paymentService;
+    private PaymentFacade paymentFacade;
 
     @InjectMocks
     private OrderFacade orderFacade;
@@ -108,11 +106,9 @@ public class OrderFacadeTest {
         verify(productService).getProductById(eq(productId));
         verify(productService).decreaseStock(eq(productId), eq(quantity));
         verify(orderService).createOrder(eq(userId), anyList());
-        verify(paymentService).processPayment(eq(orderId), eq(userId), eq(totalAmount), eq(0));
+        verify(paymentFacade).processPayment(eq(orderId), eq(userId), eq(totalAmount), eq(0));
         verify(orderService).updateOrderStatus(eq(orderId), eq("PAYMENT_COMPLETED"));
 
-        // 포인트 미사용 검증
-        verify(userService, never()).usePoint(anyLong(), anyInt());
     }
 
     @Test
@@ -130,8 +126,7 @@ public class OrderFacadeTest {
         verify(productService).checkStock(eq(productId), eq(quantity));
         verify(productService, never()).decreaseStock(anyLong(), anyInt());
         verify(orderService, never()).createOrder(anyLong(), anyList());
-        verify(userService, never()).usePoint(anyLong(), anyInt());
-        verify(paymentService, never()).processPayment(anyLong(), anyLong(), anyInt(), anyInt());
+        verify(paymentFacade, never()).processPayment(anyLong(), anyLong(), anyInt(), anyInt());
     }
 
     @Test
@@ -144,7 +139,7 @@ public class OrderFacadeTest {
 
         // 결제 처리 실패 설정
         doThrow(new RuntimeException("결제 처리 오류"))
-                .when(paymentService).processPayment(anyLong(), anyLong(), anyInt(), anyInt());
+                .when(paymentFacade).processPayment(anyLong(), anyLong(), anyInt(), anyInt());
 
         doAnswer(inv -> {
             order.setOrderStatus(inv.getArgument(1));
@@ -208,7 +203,7 @@ public class OrderFacadeTest {
 
         // 결제 처리 실패 설정
         doThrow(new RuntimeException("결제 처리 오류"))
-                .when(paymentService).processPayment(anyLong(), anyLong(), anyInt(), anyInt());
+                .when(paymentFacade).processPayment(anyLong(), anyLong(), anyInt(), anyInt());
 
         // when & then
         assertThrows(PaymentException.class, () -> orderFacade.createOrder(orderRequest));
@@ -218,7 +213,7 @@ public class OrderFacadeTest {
         verify(productService).decreaseStock(eq(productId), eq(quantity));
         verify(orderService).createOrder(eq(userId), anyList());
         verify(orderService).updateOrderStatus(eq(orderId), eq("PAYMENT_FAILED"));
-        verify(paymentService).saveFailedPayment(eq(orderId), eq(userId), eq(totalAmount));
+        verify(paymentFacade).handlePaymentFailure(eq(orderId), eq(userId), eq(totalAmount));
 
         // 재고 복구 메서드 호출 검증 - 핵심 테스트 부분
         verify(productService).recoverStocks(anyList());
@@ -234,7 +229,7 @@ public class OrderFacadeTest {
 
         // 결제 처리 실패 설정
         doThrow(new RuntimeException("결제 처리 오류"))
-                .when(paymentService).processPayment(anyLong(), anyLong(), anyInt(), anyInt());
+                .when(paymentFacade).processPayment(anyLong(), anyLong(), anyInt(), anyInt());
 
         // 재고 복구 실패 설정
         doThrow(new RuntimeException("재고 복구 오류"))
@@ -249,7 +244,7 @@ public class OrderFacadeTest {
 
         // 메서드 호출 검증
         verify(orderService).updateOrderStatus(eq(orderId), eq("PAYMENT_FAILED"));
-        verify(paymentService).saveFailedPayment(eq(orderId), eq(userId), eq(totalAmount));
+        verify(paymentFacade).handlePaymentFailure(eq(orderId), eq(userId), eq(totalAmount));
         verify(productService).recoverStocks(anyList());
     }
 }
