@@ -49,4 +49,14 @@ public class PaymentFacadeTest {
         verify(userService).usePoint(userId, usedPoints);
         verify(paymentService).processPayment(orderId, userId, totalAmount, usedPoints);
     }
+
+    @Test
+    @DisplayName("결제 실패 처리 성공")
+    void handlePaymentFailure_Success() {
+        // when
+        paymentFacade.handlePaymentFailure(orderId, userId, totalAmount);
+
+        // then
+        verify(paymentService).saveFailedPayment(orderId, userId, totalAmount);
+    }
 }
