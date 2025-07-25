@@ -59,4 +59,18 @@ public class PaymentFacadeTest {
         // then
         verify(paymentService).saveFailedPayment(orderId, userId, totalAmount);
     }
+    @Test
+    @DisplayName("결제 실패 정보 저장 중 예외 발생 시 로깅만 수행")
+    void handlePaymentFailure_ExceptionHandled() {
+        // given
+        doThrow(new RuntimeException("결제 실패 정보 저장 실패"))
+                .when(paymentService).saveFailedPayment(anyLong(), anyLong(), anyInt());
+
+        // when
+        paymentFacade.handlePaymentFailure(orderId, userId, totalAmount);
+
+        // then
+        verify(paymentService).saveFailedPayment(orderId, userId, totalAmount);
+        // 예외가 발생해도 메서드가 정상 종료되어야 함 (예외를 밖으로 던지지 않음)
+    }
 }
