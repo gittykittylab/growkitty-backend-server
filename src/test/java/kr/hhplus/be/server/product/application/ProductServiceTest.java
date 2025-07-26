@@ -1,6 +1,7 @@
 package kr.hhplus.be.server.product.application;
 
 import kr.hhplus.be.server.common.exception.InsufficientStockException;
+import kr.hhplus.be.server.order.domain.OrderItem;
 import kr.hhplus.be.server.product.domain.Product;
 import kr.hhplus.be.server.product.dto.response.ProductDetailResponse;
 import kr.hhplus.be.server.product.dto.response.ProductResponse;
@@ -33,6 +34,12 @@ public class ProductServiceTest {
     private Product testProduct;
     private List<Product> productList;
 
+    // 재고 복구 테스트
+    private OrderItem orderItem1;
+    private OrderItem orderItem2;
+    private List<OrderItem> orderItems;
+    private Product product2;
+
     @BeforeEach
     void setUp() {
         // 기본 테스트 데이터 설정
@@ -44,7 +51,30 @@ public class ProductServiceTest {
         testProduct.setProductName("테스트 상품");
         testProduct.setProductPrice(10000);
         testProduct.setStockQty(100);
+
+        // 두 번째 상품 설정
+        product2 = new Product();
+        product2.setProductId(2L);
+        product2.setProductName("상품2");
+        product2.setProductPrice(20000);
+        product2.setStockQty(200);
+
+        // 주문 항목 설정
+        orderItem1 = new OrderItem();
+        orderItem1.setProductId(1L);
+        orderItem1.setOrderQty(10);
+
+        orderItem2 = new OrderItem();
+        orderItem2.setProductId(2L);
+        orderItem2.setOrderQty(20);
+
+        orderItems = Arrays.asList(orderItem1, orderItem2);
+
+        // 기본 모킹 설정
+        when(productRepository.findById(1L)).thenReturn(Optional.of(testProduct));
+        when(productRepository.findById(2L)).thenReturn(Optional.of(product2));
     }
+
 
     @Test
     @DisplayName("상품 목록 조회")
@@ -155,5 +185,21 @@ public class ProductServiceTest {
         // 재고는 변경되지 않아야 함
         assertThat(testProduct.getStockQty()).isEqualTo(100);
         verify(productRepository).findById(productId);
+    }
+
+    @Test
+    @DisplayName("주문 상품 재고 복구 성공 테스트")
+    void recoverStocks_Success() {
+        // when
+        productService.recoverStocks(orderItems);
+
+        // then
+        assertThat(testProduct.getStockQty()).isEqualTo(110); // 100 + 10
+        assertThat(product2.getStockQty()).isEqualTo(220); // 200 + 20
+
+        verify(productRepository).findById(1L);
+        verify(productRepository).findById(2L);
+        verify(productRepository).save(testProduct);
+        verify(productRepository).save(product2);
     }
 }
