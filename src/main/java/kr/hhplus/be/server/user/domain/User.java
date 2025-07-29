@@ -24,9 +24,6 @@ public class User {
     @Column(name = "point_balance", nullable = false)
     private Integer pointBalance = 0;
 
-    @Column(name = "user_grade", nullable = false)
-    private String userGrade = "NORMAL";
-
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     @BatchSize(size = 1000)
     private List<PointHistory> pointHistories = new ArrayList<>();
