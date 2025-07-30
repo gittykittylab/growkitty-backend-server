@@ -14,44 +14,45 @@ import java.util.stream.Collectors;
 @NoArgsConstructor
 public class OrderResponse {
     // 주문 ID
-    private Long id;
+    private Long orderId;
 
     // 주문자 ID
     private Long userId;
 
+    // 쿠폰 ID
+    private Long couponId;
+
     // 주문 금액 정보
     private Integer totalAmount;
-    private Integer totalDiscountAmount;
+    private Integer couponDiscountAmount;
+
+    // 최종 결제 금액
+    private Integer finalAmount;
 
     // 주문 상태
     private String orderStatus;
 
-    // 주문 유형
-    private String orderType;
-
     // 주문 일시
-    private LocalDateTime orderedDt;
+    private LocalDateTime orderedAt;
 
     // 주문 상품 목록
     private List<OrderItemResponse> orderItems;
 
-    // 결제 정보
-//    private PaymentResponse payment;
-
     // Order 엔티티로부터 DTO 생성하는 생성자
     public OrderResponse(Order order) {
-        this.id = order.getId();
+        this.orderId = order.getId();
         this.userId = order.getUserId();
+        this.couponId = order.getCouponId();
         this.totalAmount = order.getTotalAmount();
-        this.totalDiscountAmount = order.getTotalDiscountAmount();
+        this.couponDiscountAmount = order.getCouponDiscountAmount();
+        this.finalAmount = order.calculateFinalAmount();
         this.orderStatus = order.getOrderStatus();
-        this.orderType = order.getOrderType();
-        this.orderedDt = order.getOrderedDt();
+        this.orderedAt = order.getOrderedAt();
 
         // 주문 항목 변환
         if (order.getOrderItems() != null) {
             this.orderItems = order.getOrderItems().stream()
-                    .map(item -> new OrderItemResponse(item))
+                    .map(OrderItemResponse::new)
                     .collect(Collectors.toList());
         }
     }
