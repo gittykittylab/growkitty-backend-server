@@ -7,7 +7,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "order_payments")
+@Table(name = "payments")
 @Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
@@ -18,20 +18,20 @@ public class Payment {
     @Column(name = "payment_id")
     private Long paymentId;
 
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
+
     @Column(name = "order_id", nullable = false)
     private Long orderId;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @Column(name = "coupon_id")
+    private Long couponId;
 
     @Column(name = "paid_amount", nullable = false)
     private Integer paidAmount;
 
-    @Column(name = "discount_amount")
-    private Integer discountAmount;
-
-    @Column(name = "coupon_id")
-    private Long couponId;
+    @Column(name = "applied_discount_amount")
+    private Integer appliedDiscountAmount;
 
     @Column(name = "point_used_amount", nullable = false)
     private Integer pointUsedAmount;
@@ -40,8 +40,8 @@ public class Payment {
     @Column(name = "payment_status", nullable = false)
     private PaymentStatus paymentStatus;
 
-    @Column(name = "paid_dt", nullable = false)
-    private LocalDateTime paidDt = LocalDateTime.now();
+    @Column(name = "paid_at", nullable = false)
+    private LocalDateTime paidAt = LocalDateTime.now();
 
     // 결제 취소 메서드
     public void cancel() {
@@ -58,17 +58,17 @@ public class Payment {
 
     // 결제 성공 객체 생성
     public static Payment createSuccessedPayment(Long orderId, Long userId, Integer paidAmount,
-                                        Integer pointUsedAmount, Integer discountAmount,
+                                        Integer pointUsedAmount, Integer appliedDiscountAmount,
                                         Long couponId) {
         Payment payment = new Payment();
         payment.setOrderId(orderId);
         payment.setUserId(userId);
         payment.setPaidAmount(paidAmount);
         payment.setPointUsedAmount(pointUsedAmount);
-        payment.setDiscountAmount(discountAmount);
+        payment.setAppliedDiscountAmount(appliedDiscountAmount);
         payment.setCouponId(couponId);
         payment.setPaymentStatus(PaymentStatus.PAID);
-        payment.setPaidDt(LocalDateTime.now());
+        payment.setPaidAt(LocalDateTime.now());
 
         return payment;
     }
@@ -80,10 +80,10 @@ public class Payment {
         payment.setUserId(userId);
         payment.setPaidAmount(paidAmount);
         payment.setPointUsedAmount(0); // 실패 시 포인트는 사용되지 않음
-        payment.setDiscountAmount(0);
+        payment.setAppliedDiscountAmount(0);
         payment.setCouponId(null);
         payment.setPaymentStatus(PaymentStatus.FAILED);
-        payment.setPaidDt(LocalDateTime.now());
+        payment.setPaidAt(LocalDateTime.now());
 
         return payment;
     }
