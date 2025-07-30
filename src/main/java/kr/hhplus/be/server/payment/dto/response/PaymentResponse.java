@@ -15,12 +15,12 @@ public class PaymentResponse {
     private Long paymentId;
     private Long orderId;
     private Long userId;
+    private Long couponId;
     private Integer paidAmount;
     private Integer pointUsedAmount;
-    private Integer discountAmount;
-    private Long couponId;
+    private Integer appliedDiscountAmount;
     private PaymentStatus paymentStatus;
-    private LocalDateTime paidDt;
+    private LocalDateTime paidAt;
 
     public static PaymentResponse fromEntity(Payment payment) {
         return PaymentResponse.builder()
@@ -29,10 +29,10 @@ public class PaymentResponse {
                 .userId(payment.getUserId())
                 .paidAmount(payment.getPaidAmount())
                 .pointUsedAmount(payment.getPointUsedAmount())
-                .discountAmount(payment.getDiscountAmount())
+                .appliedDiscountAmount(payment.getAppliedDiscountAmount())
                 .couponId(payment.getCouponId())
                 .paymentStatus(payment.getPaymentStatus())
-                .paidDt(payment.getPaidDt())
+                .paidAt(payment.getPaidAt())
                 .build();
     }
 }
