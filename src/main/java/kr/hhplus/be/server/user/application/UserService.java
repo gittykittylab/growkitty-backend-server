@@ -2,15 +2,13 @@ package kr.hhplus.be.server.user.application;
 
 import kr.hhplus.be.server.common.exception.EntityNotFoundException;
 import kr.hhplus.be.server.user.domain.PointHistory;
-import kr.hhplus.be.server.user.dto.response.PointBalanceResponse;
-import kr.hhplus.be.server.user.domain.repository.PointHistoryRepository;
+import kr.hhplus.be.server.user.domain.dto.response.PointBalanceResponse;
+import kr.hhplus.be.server.user.domain.PointHistoryRepository;
 import kr.hhplus.be.server.user.domain.User;
-import kr.hhplus.be.server.user.domain.repository.UserRepository;
+import kr.hhplus.be.server.user.domain.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
 
 @Service
 @Transactional(readOnly = true)

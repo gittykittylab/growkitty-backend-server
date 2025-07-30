@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.product.dto.response;
+package kr.hhplus.be.server.product.domain.dto.response;
 
 import kr.hhplus.be.server.product.domain.Product;
 import lombok.Getter;

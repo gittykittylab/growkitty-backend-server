@@ -1,8 +1,7 @@
 package kr.hhplus.be.server.product.infrastructure;
 
 import kr.hhplus.be.server.product.domain.Product;
-import kr.hhplus.be.server.product.domain.repository.ProductRepository;
-import kr.hhplus.be.server.product.infrastructure.repository.ProductJpaRepository;
+import kr.hhplus.be.server.product.domain.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 

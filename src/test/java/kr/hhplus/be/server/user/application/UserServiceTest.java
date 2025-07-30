@@ -4,9 +4,9 @@ package kr.hhplus.be.server.user.application;
 import kr.hhplus.be.server.common.exception.InsufficientBalanceException;
 import kr.hhplus.be.server.user.domain.PointHistory;
 import kr.hhplus.be.server.user.domain.User;
-import kr.hhplus.be.server.user.dto.response.PointBalanceResponse;
-import kr.hhplus.be.server.user.domain.repository.PointHistoryRepository;
-import kr.hhplus.be.server.user.domain.repository.UserRepository;
+import kr.hhplus.be.server.user.domain.dto.response.PointBalanceResponse;
+import kr.hhplus.be.server.user.domain.PointHistoryRepository;
+import kr.hhplus.be.server.user.domain.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -42,7 +42,6 @@ public class UserServiceTest {
         testUser = new User();
         testUser.setUserId(userId);
         testUser.setPointBalance(1000);
-        testUser.setUserGrade("NORMAL");
         // 기본 사용자는 존재한다고 가정
         when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
     }

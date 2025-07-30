@@ -1,8 +1,8 @@
 package kr.hhplus.be.server.product.presentation;
 
 import kr.hhplus.be.server.product.application.ProductService;
-import kr.hhplus.be.server.product.dto.response.ProductDetailResponse;
-import kr.hhplus.be.server.product.dto.response.ProductResponse;
+import kr.hhplus.be.server.product.domain.dto.response.ProductDetailResponse;
+import kr.hhplus.be.server.product.domain.dto.response.ProductResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

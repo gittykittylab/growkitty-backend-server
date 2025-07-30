@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.payment.dto.response;
+package kr.hhplus.be.server.payment.domain.dto.response;
 
 import kr.hhplus.be.server.payment.domain.Payment;
 import kr.hhplus.be.server.payment.domain.PaymentStatus;

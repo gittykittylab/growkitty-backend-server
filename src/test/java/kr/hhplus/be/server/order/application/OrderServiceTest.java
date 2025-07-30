@@ -1,10 +1,7 @@
 package kr.hhplus.be.server.order.application;
 
 import kr.hhplus.be.server.common.exception.EntityNotFoundException;
-import kr.hhplus.be.server.order.domain.Order;
-import kr.hhplus.be.server.order.domain.OrderItem;
-import kr.hhplus.be.server.order.domain.repository.OrderItemRepository;
-import kr.hhplus.be.server.order.domain.repository.OrderRepository;
+import kr.hhplus.be.server.order.domain.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -63,9 +60,8 @@ public class OrderServiceTest {
 
         // 테스트용 Order 생성
         testOrder = Order.createOrder(userId);
-        testOrder.setId(orderId);
+        testOrder.setOrderId(orderId);
         testOrder.setTotalAmount(40000); // 10000*2 + 20000*1
-        testOrder.setOrderItems(testOrderItems);
     }
 
     @Test
@@ -80,9 +76,8 @@ public class OrderServiceTest {
 
         // then
         assertThat(result).isNotNull();
-        assertThat(result.getId()).isEqualTo(orderId);
+        assertThat(result.getOrderId()).isEqualTo(orderId);
         assertThat(result.getUserId()).isEqualTo(userId);
-        assertThat(result.getOrderItems().size()).isEqualTo(2);
         verify(orderRepository, times(1)).findById(orderId);
         verify(orderItemRepository, times(1)).findByOrderId(orderId);
     }

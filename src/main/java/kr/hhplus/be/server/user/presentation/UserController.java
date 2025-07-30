@@ -1,7 +1,7 @@
 package kr.hhplus.be.server.user.presentation;
 
 import kr.hhplus.be.server.user.application.UserService;
-import kr.hhplus.be.server.user.dto.response.PointBalanceResponse;
+import kr.hhplus.be.server.user.domain.dto.response.PointBalanceResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

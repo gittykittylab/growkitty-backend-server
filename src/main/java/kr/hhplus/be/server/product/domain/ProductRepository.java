@@ -1,7 +1,5 @@
-package kr.hhplus.be.server.product.domain.repository;
+package kr.hhplus.be.server.product.domain;
 
-
-import kr.hhplus.be.server.product.domain.Product;
 
 import java.util.List;
 import java.util.Optional;

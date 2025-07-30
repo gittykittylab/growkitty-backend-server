@@ -1,6 +1,10 @@
-package kr.hhplus.be.server.order.domain;
+package kr.hhplus.be.server.order.application;
 
 import kr.hhplus.be.server.common.exception.EntityNotFoundException;
+import kr.hhplus.be.server.order.domain.Order;
+import kr.hhplus.be.server.order.domain.OrderItem;
+import kr.hhplus.be.server.order.domain.OrderItemRepository;
+import kr.hhplus.be.server.order.domain.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

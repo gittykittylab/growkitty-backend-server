@@ -1,8 +1,7 @@
 package kr.hhplus.be.server.payment.infrastructure;
 
 import kr.hhplus.be.server.payment.domain.Payment;
-import kr.hhplus.be.server.payment.domain.repository.PaymentRepository;
-import kr.hhplus.be.server.payment.infrastructure.repository.PaymentJpaRepository;
+import kr.hhplus.be.server.payment.domain.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 

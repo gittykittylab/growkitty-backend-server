@@ -4,9 +4,9 @@ import kr.hhplus.be.server.common.exception.InsufficientStockException;
 import kr.hhplus.be.server.common.exception.PaymentException;
 import kr.hhplus.be.server.order.domain.Order;
 import kr.hhplus.be.server.order.domain.OrderItem;
-import kr.hhplus.be.server.order.dto.request.OrderItemRequest;
-import kr.hhplus.be.server.order.dto.request.OrderRequest;
-import kr.hhplus.be.server.order.dto.response.OrderResponse;
+import kr.hhplus.be.server.order.domain.dto.request.OrderItemRequest;
+import kr.hhplus.be.server.order.domain.dto.request.OrderRequest;
+import kr.hhplus.be.server.order.domain.dto.response.OrderResponse;
 import kr.hhplus.be.server.payment.application.PaymentFacade;
 import kr.hhplus.be.server.product.application.ProductService;
 import kr.hhplus.be.server.product.domain.Product;
@@ -72,7 +72,7 @@ public class OrderFacadeTest {
 
         // 주문 객체 설정
         order = new Order();
-        order.setId(orderId);
+        order.setOrderId(orderId);
         order.setUserId(userId);
         order.setTotalAmount(totalAmount);
         order.setOrderStatus("PENDING");
@@ -87,8 +87,6 @@ public class OrderFacadeTest {
         orderItem.setOrderItemPrice(price);
         orderItem.setOrderItemQty(quantity);
         orderItems.add(orderItem);
-
-        order.setOrderItems(orderItems);
     }
 
     @Test
@@ -180,7 +178,7 @@ public class OrderFacadeTest {
         // then
         verify(orderService).getOrder(eq(orderId));
         assertThat(response).isNotNull();
-        assertThat(response.getId()).isEqualTo(orderId);
+        assertThat(response.getOrderId()).isEqualTo(orderId);
     }
 
     @Test
