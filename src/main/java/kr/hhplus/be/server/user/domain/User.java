@@ -24,18 +24,6 @@ public class User {
     @Column(name = "point_balance", nullable = false)
     private Integer pointBalance = 0;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
-    @BatchSize(size = 1000)
-    private List<PointHistory> pointHistories = new ArrayList<>();
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
-    @BatchSize(size = 1000)
-    private List<Coupon> coupons = new ArrayList<>();
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
-    @BatchSize(size = 1000)
-    private List<Order> orders = new ArrayList<>();
-
     // 최대 포인트 한도 상수
     private static final int MAX_POINT_BALANCE = 1000000;
 
