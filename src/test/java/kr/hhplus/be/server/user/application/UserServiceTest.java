@@ -1,13 +1,12 @@
 package kr.hhplus.be.server.user.application;
 
 
-import kr.hhplus.be.server.common.exception.EntityNotFoundException;
 import kr.hhplus.be.server.common.exception.InsufficientBalanceException;
 import kr.hhplus.be.server.user.domain.PointHistory;
 import kr.hhplus.be.server.user.domain.User;
 import kr.hhplus.be.server.user.dto.response.PointBalanceResponse;
-import kr.hhplus.be.server.user.infrastructure.PointHistoryRepository;
-import kr.hhplus.be.server.user.infrastructure.UserRepository;
+import kr.hhplus.be.server.user.domain.repository.PointHistoryRepository;
+import kr.hhplus.be.server.user.domain.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
