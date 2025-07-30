@@ -16,9 +16,8 @@ public class PointHistory {
     @Column(name = "point_history_id")
     private Long pointHistoryId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", insertable = false, updatable = false)
-    private User user;
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
 
     @Column(name = "amount", nullable = false)
     private Integer amount;
@@ -30,9 +29,9 @@ public class PointHistory {
     private LocalDateTime createdAt = LocalDateTime.now();
 
     // 포인트 내역 생성 - 충전
-    public static PointHistory createChargeHistory(User user, int amount) {
+    public static PointHistory createChargeHistory(Long userId, int amount) {
         PointHistory history = new PointHistory();
-        history.setUser(user);
+        history.setUserId(userId);
         history.setAmount(amount);
         history.setPointType("CHARGE");
         history.setCreatedAt(LocalDateTime.now());
@@ -40,9 +39,9 @@ public class PointHistory {
     }
 
     // 포인트 내역 생성 - 사용
-    public static PointHistory createUseHistory(User user, int amount) {
+    public static PointHistory createUseHistory(Long userId, int amount) {
         PointHistory history = new PointHistory();
-        history.setUser(user);
+        history.setUserId(userId);
         history.setAmount(-amount); // 음수로 저장
         history.setPointType("USE");
         history.setCreatedAt(LocalDateTime.now());
