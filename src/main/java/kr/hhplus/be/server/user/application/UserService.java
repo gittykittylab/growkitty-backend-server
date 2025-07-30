@@ -36,7 +36,7 @@ public class UserService {
         user.chargePoint(amount);
 
         // 포인트 충전 이력 저장
-        PointHistory history = PointHistory.createChargeHistory(userId, amount);
+        PointHistory history = PointHistory.createChargeHistory(user, amount);
 
         pointHistoryRepository.save(history);
     }
@@ -51,7 +51,7 @@ public class UserService {
         user.usePoint(amount);
 
         // 포인트 사용 이력 저장
-        PointHistory history = PointHistory.createUseHistory(userId, amount);
+        PointHistory history = PointHistory.createUseHistory(user, amount);
 
         pointHistoryRepository.save(history);
     }
