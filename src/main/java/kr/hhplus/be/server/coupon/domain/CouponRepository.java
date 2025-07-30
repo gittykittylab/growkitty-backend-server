@@ -1,6 +1,4 @@
-package kr.hhplus.be.server.coupon.domain.repository;
-
-import kr.hhplus.be.server.coupon.domain.Coupon;
+package kr.hhplus.be.server.coupon.domain;
 
 public interface CouponRepository {
     long countByPolicyId(Long policyId);
