@@ -34,16 +34,12 @@ public class OrderItemResponse {
     // OrderItem 엔티티로부터 DTO 생성하는 생성자
     public OrderItemResponse(OrderItem orderItem) {
         this.id = orderItem.getId();
-        this.orderId = orderItem.getOrder().getId();
-        this.productId = orderItem.getProductId();
-        this.productName = orderItem.getProductName();
-        this.productPrice = orderItem.getProductPrice();
-        this.orderPrice = orderItem.getOrderPrice();
-        this.orderQty = orderItem.getOrderQty();
-        this.itemDiscountAmount = orderItem.getItemDiscountAmount();
-        this.appliedCouponId = orderItem.getAppliedCouponId();
+        this.orderId = orderItem.getOrderId();
+        this.productId = orderItem.getOrderedProductId();
+        this.productName = orderItem.getOrderedProductName();
+        this.productPrice = orderItem.getOrderedProductPrice();
+        this.orderPrice = orderItem.getOrderItemPrice();
+        this.orderQty = orderItem.getOrderItemQty();
 
-        // 소계 계산
-        this.subtotal = orderItem.getOrderPrice() * orderItem.getOrderQty() - orderItem.getItemDiscountAmount();
     }
 }

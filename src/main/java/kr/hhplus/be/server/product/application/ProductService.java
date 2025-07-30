@@ -20,7 +20,13 @@ import java.util.stream.Collectors;
 public class ProductService {
     private final ProductRepository productRepository;
 
-    //상품 목록 조회
+    // 상품 조회
+    public Product getProduct(Long productId) {
+        return productRepository.findById(productId)
+                .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다. id=" + productId));
+    }
+    
+    // 상품 목록 조회
     public List<ProductResponse> getProducts(){
         List<Product> products = productRepository.findAll();
         return  products.stream()
@@ -53,13 +59,13 @@ public class ProductService {
     public void recoverStocks(List<OrderItem> orderItems) {
         for (OrderItem item : orderItems) {
             try {
-                productRepository.findById(item.getProductId())
+                productRepository.findById(item.getOrderedProductId())
                         .ifPresent(product -> {
-                            product.increaseStock(item.getOrderQty());
+                            product.increaseStock(item.getOrderItemQty());
                             productRepository.save(product);
                         });
             } catch (Exception e) {
-                throw new StockRecoveryException(item.getProductId(), e.getMessage());
+                throw new StockRecoveryException(item.getOrderedProductId(), e.getMessage());
             }
         }
     }

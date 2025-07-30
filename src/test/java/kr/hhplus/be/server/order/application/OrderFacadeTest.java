@@ -8,10 +8,8 @@ import kr.hhplus.be.server.order.dto.request.OrderItemRequest;
 import kr.hhplus.be.server.order.dto.request.OrderRequest;
 import kr.hhplus.be.server.order.dto.response.OrderResponse;
 import kr.hhplus.be.server.payment.application.PaymentFacade;
-import kr.hhplus.be.server.payment.application.PaymentService;
 import kr.hhplus.be.server.product.application.ProductService;
-import kr.hhplus.be.server.product.dto.response.ProductDetailResponse;
-import kr.hhplus.be.server.user.application.UserService;
+import kr.hhplus.be.server.product.domain.Product;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,9 +18,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,7 +41,7 @@ public class OrderFacadeTest {
     private OrderFacade orderFacade;
 
     private OrderRequest orderRequest;
-    private ProductDetailResponse product;
+    private Product product;
     private Order order;
 
     private final Long userId = 1L;
@@ -68,10 +64,11 @@ public class OrderFacadeTest {
         orderRequest.setUsedAmount(0); // 기본값은 포인트 미사용
 
         // 상품 정보 설정
-        product = new ProductDetailResponse();
+        product = new Product();
         product.setProductId(productId);
         product.setProductName("테스트 상품");
         product.setProductPrice(price);
+        product.setStockQty(10); // 충분한 재고
 
         // 주문 객체 설정
         order = new Order();
@@ -79,6 +76,19 @@ public class OrderFacadeTest {
         order.setUserId(userId);
         order.setTotalAmount(totalAmount);
         order.setOrderStatus("PENDING");
+
+        // 주문 항목 설정
+        List<OrderItem> orderItems = new ArrayList<>();
+        OrderItem orderItem = new OrderItem();
+        orderItem.setOrderId(orderId);
+        orderItem.setOrderedProductId(productId);
+        orderItem.setOrderedProductName("테스트 상품");
+        orderItem.setOrderedProductPrice(price);
+        orderItem.setOrderItemPrice(price);
+        orderItem.setOrderItemQty(quantity);
+        orderItems.add(orderItem);
+
+        order.setOrderItems(orderItems);
     }
 
     @Test
@@ -86,7 +96,7 @@ public class OrderFacadeTest {
     void createOrder_BasicFlowSuccess() {
         // given
         when(productService.checkStock(anyLong(), anyInt())).thenReturn(true);
-        when(productService.getProductById(anyLong())).thenReturn(product);
+        when(productService.getProduct(anyLong())).thenReturn(product);
         when(orderService.createOrder(anyLong(), anyList())).thenReturn(order);
 
         doAnswer(inv -> {
@@ -103,12 +113,11 @@ public class OrderFacadeTest {
 
         // 비즈니스 흐름 검증
         verify(productService).checkStock(eq(productId), eq(quantity));
-        verify(productService).getProductById(eq(productId));
+        verify(productService).getProduct(eq(productId));
         verify(productService).decreaseStock(eq(productId), eq(quantity));
         verify(orderService).createOrder(eq(userId), anyList());
         verify(paymentFacade).processPayment(eq(orderId), eq(userId), eq(totalAmount), eq(0));
         verify(orderService).updateOrderStatus(eq(orderId), eq("PAYMENT_COMPLETED"));
-
     }
 
     @Test
@@ -134,7 +143,7 @@ public class OrderFacadeTest {
     void createOrder_PaymentFailureRollsBack() {
         // given
         when(productService.checkStock(anyLong(), anyInt())).thenReturn(true);
-        when(productService.getProductById(anyLong())).thenReturn(product);
+        when(productService.getProduct(anyLong())).thenReturn(product);
         when(orderService.createOrder(anyLong(), anyList())).thenReturn(order);
 
         // 결제 처리 실패 설정
@@ -156,9 +165,7 @@ public class OrderFacadeTest {
         verify(productService).decreaseStock(eq(productId), eq(quantity));
         verify(orderService).createOrder(eq(userId), anyList());
         verify(orderService).updateOrderStatus(eq(orderId), eq("PAYMENT_FAILED"));
-
-        // 트랜잭션 롤백 검증을 위한 부분은 단위 테스트에서 검증하기 어려움
-        // 실제 롤백은 통합 테스트에서 검증
+        verify(paymentFacade).handlePaymentFailure(eq(orderId), eq(userId), eq(totalAmount));
     }
 
     @Test
@@ -171,10 +178,7 @@ public class OrderFacadeTest {
         OrderResponse response = orderFacade.getOrder(orderId);
 
         // then
-        // OrderService.getOrder가 올바른 파라미터(orderId)로 한 번 호출되었는지 검증
         verify(orderService).getOrder(eq(orderId));
-
-        // 반환된 응답이 예상대로인지 확인 (선택적)
         assertThat(response).isNotNull();
         assertThat(response.getId()).isEqualTo(orderId);
     }
@@ -189,7 +193,6 @@ public class OrderFacadeTest {
         orderFacade.updateOrderStatus(orderId, newStatus);
 
         // then
-        // OrderService.updateOrderStatus가 올바른 파라미터(orderId, newStatus)로 한 번 호출되었는지 검증
         verify(orderService).updateOrderStatus(eq(orderId), eq(newStatus));
     }
 
@@ -198,7 +201,7 @@ public class OrderFacadeTest {
     void createOrder_PaymentFailureTriggersStockRecovery() {
         // given
         when(productService.checkStock(anyLong(), anyInt())).thenReturn(true);
-        when(productService.getProductById(anyLong())).thenReturn(product);
+        when(productService.getProduct(anyLong())).thenReturn(product);
         when(orderService.createOrder(anyLong(), anyList())).thenReturn(order);
 
         // 결제 처리 실패 설정
@@ -215,7 +218,7 @@ public class OrderFacadeTest {
         verify(orderService).updateOrderStatus(eq(orderId), eq("PAYMENT_FAILED"));
         verify(paymentFacade).handlePaymentFailure(eq(orderId), eq(userId), eq(totalAmount));
 
-        // 재고 복구 메서드 호출 검증 - 핵심 테스트 부분
+        // 재고 복구 메서드 호출 검증
         verify(productService).recoverStocks(anyList());
     }
 
@@ -224,7 +227,7 @@ public class OrderFacadeTest {
     void createOrder_StockRecoveryFailureAfterPaymentFailure() {
         // given
         when(productService.checkStock(anyLong(), anyInt())).thenReturn(true);
-        when(productService.getProductById(anyLong())).thenReturn(product);
+        when(productService.getProduct(anyLong())).thenReturn(product);
         when(orderService.createOrder(anyLong(), anyList())).thenReturn(order);
 
         // 결제 처리 실패 설정
