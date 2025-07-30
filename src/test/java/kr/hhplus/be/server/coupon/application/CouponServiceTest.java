@@ -2,8 +2,8 @@ package kr.hhplus.be.server.coupon.application;
 
 import kr.hhplus.be.server.coupon.domain.Coupon;
 import kr.hhplus.be.server.coupon.domain.CouponPolicy;
-import kr.hhplus.be.server.coupon.infrastructure.CouponPolicyRepository;
-import kr.hhplus.be.server.coupon.infrastructure.CouponRepository;
+import kr.hhplus.be.server.coupon.domain.repository.CouponPolicyRepository;
+import kr.hhplus.be.server.coupon.domain.repository.CouponRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -50,7 +50,6 @@ class CouponServiceTest {
         expectedCoupon.setCouponId(1L);
 
         policy.setExpiredDays(30); // expiredDays 값 설정 추가
-        policy.setDiscountRate(10);
         policy.setDiscountAmount(1000);
 
         // 기본 모킹 설정

@@ -15,9 +15,6 @@ public class CouponPolicy {
     @Column(name = "policy_id")
     private Long policyId;
 
-    @Column(name = "discount_rate")
-    private Integer discountRate;
-
     @Column(name = "discount_amount")
     private Integer discountAmount;
 
@@ -27,14 +24,11 @@ public class CouponPolicy {
     @Column(name = "total_quantity", nullable = false)
     private Integer totalQuantity;
 
-    @Column(name = "target_user_grade")
-    private String targetUserGrade;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
-    @Column(name = "created_dt")
-    private LocalDateTime createdDt;
-
-    @Column(name = "updated_dt")
-    private LocalDateTime updatedDt;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     // 도메인 메서드: 쿠폰 발급 가능 여부 확인
     public boolean isAvailableForIssue(long issuedCount) {

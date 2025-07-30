@@ -21,41 +21,33 @@ public class Coupon {
     @Column(name = "policy_id", nullable = false)
     private Long policyId;
 
-    @Column(name = "discount_rate")
-    private Integer discountRate;
-
-    @Column(name = "discount_amount")
-    private Integer discountAmount;
-
-    @Column(name = "expired_dt")
-    private LocalDateTime expiredDt;
+    @Column(name = "expired_at")
+    private LocalDateTime expiredAt;
 
     @Column(name = "coupon_status", nullable = false)
     private String couponStatus;
 
-    @Column(name = "created_dt")
-    private LocalDateTime createdDt;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
-    @Column(name = "updated_dt")
-    private LocalDateTime updatedDt;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     // 도메인 메서드: 쿠폰 생성
     public static Coupon createFromPolicy(CouponPolicy policy, Long userId) {
         Coupon coupon = new Coupon();
         coupon.setUserId(userId);
         coupon.setPolicyId(policy.getPolicyId());
-        coupon.setDiscountRate(policy.getDiscountRate());
-        coupon.setDiscountAmount(policy.getDiscountAmount());
-        coupon.setExpiredDt(policy.calculateExpiryDate());
+        coupon.setExpiredAt(policy.calculateExpiryDate());
         coupon.setCouponStatus("AVAILABLE");
-        coupon.setCreatedDt(LocalDateTime.now());
-        coupon.setUpdatedDt(LocalDateTime.now());
+        coupon.setCreatedAt(LocalDateTime.now());
+        coupon.setUpdatedAt(LocalDateTime.now());
         return coupon;
     }
 
     // 도메인 메서드: 쿠폰 상태 복원
     public void restore() {
         this.couponStatus = "AVAILABLE";
-        this.updatedDt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 }
