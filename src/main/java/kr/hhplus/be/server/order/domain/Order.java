@@ -15,7 +15,7 @@ public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "order_id")
-    private Long id;
+    private Long orderId;
 
     @Column(name = "user_id", nullable = false)
     private Long userId;
@@ -35,9 +35,6 @@ public class Order {
     @Column(name = "ordered_at", nullable = false)
     private LocalDateTime orderedAt;
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<OrderItem> orderItems = new ArrayList<>();
-
     // 주문 생성 팩토리 메서드
     public static Order createOrder(Long userId) {
         Order order = new Order();
@@ -48,16 +45,6 @@ public class Order {
         order.setOrderStatus("PENDING");
         order.setOrderedAt(LocalDateTime.now());
         return order;
-    }
-
-    // 주문 항목 추가 메서드
-    public void addOrderItem(OrderItem orderItem) {
-        this.orderItems.add(orderItem);
-
-        orderItem.setOrderId(this.id);
-
-        // 주문 총액 업데이트
-        this.totalAmount += orderItem.getOrderItemPrice() * orderItem.getOrderItemQty();
     }
 
     // 최종 결제 금액 계산

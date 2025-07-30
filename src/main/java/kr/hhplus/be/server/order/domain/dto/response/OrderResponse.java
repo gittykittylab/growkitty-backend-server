@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.order.dto.response;
+package kr.hhplus.be.server.order.domain.dto.response;
 
 import kr.hhplus.be.server.order.domain.Order;
 import lombok.Getter;
@@ -6,8 +6,8 @@ import lombok.Setter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -36,11 +36,11 @@ public class OrderResponse {
     private LocalDateTime orderedAt;
 
     // 주문 상품 목록
-    private List<OrderItemResponse> orderItems;
+    private List<OrderItemResponse> orderItems = new ArrayList<>();
 
-    // Order 엔티티로부터 DTO 생성하는 생성자
+    // Order 엔티티만으로 기본 정보를 설정하는 생성자
     public OrderResponse(Order order) {
-        this.orderId = order.getId();
+        this.orderId = order.getOrderId();
         this.userId = order.getUserId();
         this.couponId = order.getCouponId();
         this.totalAmount = order.getTotalAmount();
@@ -48,12 +48,19 @@ public class OrderResponse {
         this.finalAmount = order.calculateFinalAmount();
         this.orderStatus = order.getOrderStatus();
         this.orderedAt = order.getOrderedAt();
+    }
 
-        // 주문 항목 변환
-        if (order.getOrderItems() != null) {
-            this.orderItems = order.getOrderItems().stream()
-                    .map(OrderItemResponse::new)
-                    .collect(Collectors.toList());
+    // OrderItems를 별도로 설정하는 메소드
+    public void setOrderItemResponses(List<OrderItemResponse> orderItemResponses) {
+        if (orderItemResponses != null) {
+            this.orderItems = new ArrayList<>(orderItemResponses);
         }
+    }
+
+    // OrderItems를 포함하여 한번에 생성하는 정적 팩토리 메소드
+    public static OrderResponse createWithItems(Order order, List<OrderItemResponse> orderItemResponses) {
+        OrderResponse response = new OrderResponse(order);
+        response.setOrderItemResponses(orderItemResponses);
+        return response;
     }
 }

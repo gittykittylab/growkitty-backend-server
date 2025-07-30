@@ -4,9 +4,10 @@ import kr.hhplus.be.server.common.exception.InsufficientStockException;
 import kr.hhplus.be.server.common.exception.PaymentException;
 import kr.hhplus.be.server.order.domain.Order;
 import kr.hhplus.be.server.order.domain.OrderItem;
-import kr.hhplus.be.server.order.dto.request.OrderItemRequest;
-import kr.hhplus.be.server.order.dto.request.OrderRequest;
-import kr.hhplus.be.server.order.dto.response.OrderResponse;
+import kr.hhplus.be.server.order.domain.OrderService;
+import kr.hhplus.be.server.order.domain.dto.request.OrderItemRequest;
+import kr.hhplus.be.server.order.domain.dto.request.OrderRequest;
+import kr.hhplus.be.server.order.domain.dto.response.OrderResponse;
 import kr.hhplus.be.server.payment.application.PaymentFacade;
 import kr.hhplus.be.server.product.application.ProductService;
 import kr.hhplus.be.server.product.domain.Product;
@@ -19,9 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * OrderFacade는 주문 관련 작업의 흐름을 조정하는 역할을 합니다.
- * 여러 서비스(OrderService, ProductService, PaymentFacade)를 조합하여
- * 클라이언트에게 단순화된 인터페이스를 제공합니다.
+ * OrderFacade 주문 관련 작업의 흐름을 조정하는 역할
+ * 여러 서비스(OrderService, ProductService, PaymentFacade)를 조합
  */
 @Slf4j
 @Component
@@ -32,7 +32,7 @@ public class OrderFacade {
     private final PaymentFacade paymentFacade;
 
     /**
-     * 주문 생성 프로세스 전체를 조정합니다.
+     * 주문 생성 프로세스
      * 1. 상품 재고 확인 및 감소
      * 2. 주문 생성
      * 3. 결제 처리
@@ -49,7 +49,7 @@ public class OrderFacade {
             Order order = orderService.createOrder(userId, orderItems);
 
             // 3. 결제 처리
-            processPayment(order, userId, request.getUsedAmount());
+            processPayment(order, userId, request.getUsedAmount(), orderItems);
 
             return new OrderResponse(order);
         } catch (Exception e) {
@@ -89,21 +89,21 @@ public class OrderFacade {
     /**
      * 결제를 처리합니다.
      */
-    private void processPayment(Order order, Long userId, Integer usedPoints) {
+    private void processPayment(Order order, Long userId, Integer usedPoints, List<OrderItem> orderItems) {
         try {
             // 결제 처리
             int points = usedPoints != null ? usedPoints : 0;
-            paymentFacade.processPayment(order.getId(), userId, order.getTotalAmount(), points);
+            paymentFacade.processPayment(order.getOrderId(), userId, order.getTotalAmount(), points);
 
             // 주문 상태 업데이트
-            orderService.updateOrderStatus(order.getId(), "PAYMENT_COMPLETED");
+            orderService.updateOrderStatus(order.getOrderId(), "PAYMENT_COMPLETED");
         } catch (Exception e) {
             // 결제 실패 처리
-            orderService.updateOrderStatus(order.getId(), "PAYMENT_FAILED");
-            paymentFacade.handlePaymentFailure(order.getId(), userId, order.getTotalAmount());
+            orderService.updateOrderStatus(order.getOrderId(), "PAYMENT_FAILED");
+            paymentFacade.handlePaymentFailure(order.getOrderId(), userId, order.getTotalAmount());
 
             // 상품별 재고 복구 처리
-            recoverInventory(order.getOrderItems());
+            recoverInventory(orderItems);
 
             throw new PaymentException("결제 처리 실패: " + e.getMessage());
         }

@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.order.dto.request;
+package kr.hhplus.be.server.order.domain.dto.request;
 
 import lombok.Getter;
 import lombok.Setter;

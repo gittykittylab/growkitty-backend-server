@@ -1,10 +1,6 @@
-package kr.hhplus.be.server.order.application;
+package kr.hhplus.be.server.order.domain;
 
 import kr.hhplus.be.server.common.exception.EntityNotFoundException;
-import kr.hhplus.be.server.order.domain.Order;
-import kr.hhplus.be.server.order.domain.OrderItem;
-import kr.hhplus.be.server.order.domain.repository.OrderItemRepository;
-import kr.hhplus.be.server.order.domain.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,7 +21,6 @@ public class OrderService {
 
         // 주문 항목 조회
         List<OrderItem> orderItems = orderItemRepository.findByOrderId(orderId);
-        order.setOrderItems(orderItems);
 
         return order;
     }
@@ -42,7 +37,7 @@ public class OrderService {
 
         for (OrderItem item : orderItems) {
             // 주문 ID 설정
-            item.setOrderId(order.getId());
+            item.setOrderId(order.getOrderId());
 
             // 주문 항목 저장
             orderItemRepository.save(item);

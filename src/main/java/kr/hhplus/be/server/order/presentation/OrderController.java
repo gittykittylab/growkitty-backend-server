@@ -2,13 +2,10 @@ package kr.hhplus.be.server.order.presentation;
 
 import jakarta.validation.Valid;
 import kr.hhplus.be.server.order.application.OrderFacade;
-import kr.hhplus.be.server.order.application.OrderService;
-import kr.hhplus.be.server.order.domain.Order;
-import kr.hhplus.be.server.order.dto.request.OrderRequest;
-import kr.hhplus.be.server.order.dto.response.OrderResponse;
+import kr.hhplus.be.server.order.domain.dto.request.OrderRequest;
+import kr.hhplus.be.server.order.domain.dto.response.OrderResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.RestController;
@@ -33,7 +30,7 @@ public class OrderController {
         OrderResponse orderResponse = orderFacade.createOrder(request);
 
         log.info("주문 생성 완료 - orderId: {}, totalAmount: {}",
-                orderResponse.getId(), orderResponse.getTotalAmount());
+                orderResponse.getOrderId(), orderResponse.getTotalAmount());
 
         return ResponseEntity.ok(orderResponse);
     }
