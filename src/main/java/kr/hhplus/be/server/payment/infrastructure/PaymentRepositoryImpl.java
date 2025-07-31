@@ -5,6 +5,8 @@ import kr.hhplus.be.server.payment.domain.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 @RequiredArgsConstructor
 public class PaymentRepositoryImpl implements PaymentRepository {
@@ -13,5 +15,10 @@ public class PaymentRepositoryImpl implements PaymentRepository {
     @Override
     public Payment save(Payment payment) {
         return paymentJpaRepository.save(payment);
+    }
+
+    @Override
+    public Optional<Payment> findByOrderId(Long orderId) {
+        return paymentJpaRepository.findByOrderId(orderId);
     }
 }
