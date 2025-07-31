@@ -4,6 +4,7 @@ import kr.hhplus.be.server.common.exception.InsufficientStockException;
 import kr.hhplus.be.server.common.exception.PaymentException;
 import kr.hhplus.be.server.order.domain.Order;
 import kr.hhplus.be.server.order.domain.OrderItem;
+import kr.hhplus.be.server.order.domain.OrderStatus;
 import kr.hhplus.be.server.order.domain.dto.request.OrderItemRequest;
 import kr.hhplus.be.server.order.domain.dto.request.OrderRequest;
 import kr.hhplus.be.server.order.domain.dto.response.OrderResponse;
@@ -95,10 +96,10 @@ public class OrderFacade {
             paymentFacade.processPayment(order.getOrderId(), userId, order.getTotalAmount(), points);
 
             // 주문 상태 업데이트
-            orderService.updateOrderStatus(order.getOrderId(), "PAYMENT_COMPLETED");
+            orderService.updateOrderStatus(order.getOrderId(), OrderStatus.PAID);
         } catch (Exception e) {
             // 결제 실패 처리
-            orderService.updateOrderStatus(order.getOrderId(), "PAYMENT_FAILED");
+            orderService.updateOrderStatus(order.getOrderId(), OrderStatus.CANCELED);
             paymentFacade.handlePaymentFailure(order.getOrderId(), userId, order.getTotalAmount());
 
             // 상품별 재고 복구 처리
@@ -131,7 +132,7 @@ public class OrderFacade {
      * 주문 상태를 업데이트합니다.
      */
     @Transactional
-    public void updateOrderStatus(Long orderId, String status) {
-        orderService.updateOrderStatus(orderId, status);
+    public void updateOrderStatus(Long orderId, OrderStatus orderStatus) {
+        orderService.updateOrderStatus(orderId, orderStatus);
     }
 }

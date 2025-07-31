@@ -2,6 +2,7 @@ package kr.hhplus.be.server.order.presentation;
 
 import jakarta.validation.Valid;
 import kr.hhplus.be.server.order.application.OrderFacade;
+import kr.hhplus.be.server.order.domain.OrderStatus;
 import kr.hhplus.be.server.order.domain.dto.request.OrderRequest;
 import kr.hhplus.be.server.order.domain.dto.response.OrderResponse;
 import lombok.RequiredArgsConstructor;
@@ -60,7 +61,7 @@ public class OrderController {
     @PatchMapping("/{orderId}/status")
     public ResponseEntity<Void> updateOrderStatus(
             @PathVariable Long orderId,
-            @RequestParam String status) {
+            @RequestParam OrderStatus status) {
 
         log.info("주문 상태 업데이트 요청 - orderId: {}, status: {}", orderId, status);
 

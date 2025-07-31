@@ -1,6 +1,7 @@
 package kr.hhplus.be.server.order.domain.dto.response;
 
 import kr.hhplus.be.server.order.domain.Order;
+import kr.hhplus.be.server.order.domain.OrderStatus;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
@@ -30,7 +31,7 @@ public class OrderResponse {
     private Integer finalAmount;
 
     // 주문 상태
-    private String orderStatus;
+    private OrderStatus orderStatus;
 
     // 주문 일시
     private LocalDateTime orderedAt;

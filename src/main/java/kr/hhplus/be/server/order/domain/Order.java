@@ -1,6 +1,7 @@
 package kr.hhplus.be.server.order.domain;
 
 import jakarta.persistence.*;
+import kr.hhplus.be.server.payment.domain.PaymentStatus;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDateTime;
@@ -31,7 +32,7 @@ public class Order {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "order_status", nullable = false)
-    private String orderStatus;
+    private OrderStatus orderStatus;
 
     @Column(name = "ordered_at", nullable = false)
     private LocalDateTime orderedAt;
@@ -43,7 +44,7 @@ public class Order {
 //        order.setCouponId(couponId);
         order.setTotalAmount(0);
         order.setCouponDiscountAmount(0);
-        order.setOrderStatus("PENDING");
+        order.setOrderStatus(OrderStatus.PENDING);
         order.setOrderedAt(LocalDateTime.now());
         return order;
     }
@@ -54,7 +55,7 @@ public class Order {
     }
 
     // 주문 상태 변경
-    public void updateStatus(String status) {
+    public void updateStatus(OrderStatus status) {
         this.orderStatus = status;
     }
 
