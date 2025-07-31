@@ -27,4 +27,5 @@ public class ProductRepositoryImpl implements ProductRepository {
     public void save(Product product) {
         productJpaRepository.save(product);
     }
+
 }

@@ -5,12 +5,15 @@ import kr.hhplus.be.server.common.exception.StockRecoveryException;
 import kr.hhplus.be.server.order.domain.OrderItem;
 import kr.hhplus.be.server.product.domain.Product;
 import kr.hhplus.be.server.product.domain.ProductRepository;
+import kr.hhplus.be.server.product.domain.TopProductRepository;
+import kr.hhplus.be.server.product.domain.TopProductView;
 import kr.hhplus.be.server.product.domain.dto.response.ProductDetailResponse;
 import kr.hhplus.be.server.product.domain.dto.response.ProductResponse;
+import kr.hhplus.be.server.product.domain.dto.response.TopProductResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
-
+import org.springframework.cache.annotation.Cacheable;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,6 +22,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ProductService {
     private final ProductRepository productRepository;
+    private final TopProductRepository topProductRepository;
 
     // 상품 조회
     public Product getProduct(Long productId) {
@@ -68,5 +72,13 @@ public class ProductService {
                 throw new StockRecoveryException(item.getOrderedProductId(), e.getMessage());
             }
         }
+    }
+    // 최근 3일간 가장 많이 팔린 상위 5개 상품 조회
+    @Cacheable(value = "topProducts", key = "'last3days'")
+    public List<TopProductResponse> getTopSellingProducts() {
+        List<TopProductView> topProducts = topProductRepository.findAll();
+        return topProducts.stream()
+                .map(TopProductResponse::from)
+                .collect(Collectors.toList());
     }
 }
