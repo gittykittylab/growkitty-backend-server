@@ -29,6 +29,7 @@ public class Order {
     @Column(name = "coupon_discount_amount", nullable = false)
     private Integer couponDiscountAmount = 0;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "order_status", nullable = false)
     private String orderStatus;
 
