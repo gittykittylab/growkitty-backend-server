@@ -101,10 +101,6 @@ public class OrderServiceTest {
     void createOrder_Success() {
         // given
         Order newOrder = Order.createOrder(userId);
-        when(orderRepository.save(any(Order.class))).thenReturn(newOrder);
-
-        // OrderService의 createOrder 메서드가 ID 생성을 위해 먼저 save를 호출하고
-        // 다시 총액 업데이트 후 save를 호출하기 때문에, save가 호출될 때마다 다른 반환값을 설정
         when(orderRepository.save(any(Order.class)))
                 .thenReturn(newOrder)  // 첫 번째 호출에서는 빈 주문 반환
                 .thenReturn(testOrder); // 두 번째 호출에서는 총액이 설정된 주문 반환
@@ -123,15 +119,14 @@ public class OrderServiceTest {
     @DisplayName("주문 상태 업데이트 성공")
     void updateOrderStatus_Success() {
         // given
-        String newStatus = "DELIVERED";
         when(orderRepository.findById(anyLong())).thenReturn(Optional.of(testOrder));
         when(orderItemRepository.findByOrderId(orderId)).thenReturn(testOrderItems);
 
         // when
-        orderService.updateOrderStatus(orderId, newStatus);
+        orderService.updateOrderStatus(orderId, OrderStatus.DELIVERED);
 
         // then
-        assertThat(testOrder.getOrderStatus()).isEqualTo(newStatus);
+        assertThat(testOrder.getOrderStatus()).isEqualTo(OrderStatus.DELIVERED);
         verify(orderRepository, times(1)).findById(orderId);
     }
 
