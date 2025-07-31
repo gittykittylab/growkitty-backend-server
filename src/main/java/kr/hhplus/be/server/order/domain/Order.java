@@ -1,6 +1,7 @@
 package kr.hhplus.be.server.order.domain;
 
 import jakarta.persistence.*;
+import kr.hhplus.be.server.payment.domain.PaymentStatus;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDateTime;
@@ -15,54 +16,47 @@ public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "order_id")
-    private Long id;
+    private Long orderId;
 
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
+    @Column(name = "coupon_id")
+    private Long couponId;
+
     @Column(name = "total_amount", nullable = false)
-    private Integer totalAmount;
+    private Integer totalAmount = 0;
 
-    @Column(name = "total_discount_amount")
-    private Integer totalDiscountAmount = 0;
+    @Column(name = "coupon_discount_amount", nullable = false)
+    private Integer couponDiscountAmount = 0;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "order_status", nullable = false)
-    private String orderStatus;
+    private OrderStatus orderStatus;
 
-    @Column(name = "order_type", nullable = false)
-    private String orderType = "NORMAL";
+    @Column(name = "ordered_at", nullable = false)
+    private LocalDateTime orderedAt;
 
-    @Column(name = "ordered_dt", nullable = false)
-    private LocalDateTime orderedDt = LocalDateTime.now();
-
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
-    private List<OrderItem> orderItems = new ArrayList<>();
-
-    // 주문 항목 추가
-    //양방향관계
-    public void addOrderItem(OrderItem orderItem) {
-        orderItems.add(orderItem);
-        orderItem.setOrder(this);
-    }
-    // 주문 생성
-    public static Order createOrder(Long userId, List<OrderItem> orderItems) {
+    // 주문 생성 팩토리 메서드
+    public static Order createOrder(Long userId) {
         Order order = new Order();
         order.setUserId(userId);
-        order.setOrderStatus("PENDING");
-        order.setOrderType("NORMAL"); // "NORMAL" 일반 주문 "GIFT" 선물 주문
-        order.setOrderedDt(LocalDateTime.now());
-
-        int totalAmount = 0;
-
-        for (OrderItem orderItem : orderItems) { 
-            order.addOrderItem(orderItem); // 연관관계 설정
-            totalAmount += orderItem.getOrderPrice() * orderItem.getOrderQty(); // 총 금액
-        }
-
-        order.setTotalAmount(totalAmount);
-        order.setTotalDiscountAmount(0);  // 할인 없음
-
+//        order.setCouponId(couponId);
+        order.setTotalAmount(0);
+        order.setCouponDiscountAmount(0);
+        order.setOrderStatus(OrderStatus.PENDING);
+        order.setOrderedAt(LocalDateTime.now());
         return order;
     }
 
+    // 최종 결제 금액 계산
+    public int calculateFinalAmount() {
+        return totalAmount - couponDiscountAmount;
     }
+
+    // 주문 상태 변경
+    public void updateStatus(OrderStatus status) {
+        this.orderStatus = status;
+    }
+
+}

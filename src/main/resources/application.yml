@@ -16,11 +16,16 @@ spring:
     generate-ddl: false
     show-sql: false
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
     properties:
       hibernate.timezone.default_storage: NORMALIZE_UTC
       hibernate.jdbc.time_zone: UTC
 
+  logging:
+    level:
+      org.hibernate.SQL: debug
+      org.hibernate.type.descriptor.sql: trace
+      kr.hhplus.be.server: debug
 ---
 spring.config.activate.on-profile: local, test
 

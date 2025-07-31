@@ -2,8 +2,14 @@ package kr.hhplus.be.server.user.domain;
 
 import jakarta.persistence.*;
 import kr.hhplus.be.server.common.exception.InsufficientBalanceException;
+import kr.hhplus.be.server.coupon.domain.Coupon;
+import kr.hhplus.be.server.order.domain.Order;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -16,10 +22,7 @@ public class User {
     private Long userId;
 
     @Column(name = "point_balance", nullable = false)
-    private Integer pointBalance;
-
-    @Column(name = "user_grade", nullable = false)
-    private String userGrade = "NORMAL";
+    private Integer pointBalance = 0;
 
     // 최대 포인트 한도 상수
     private static final int MAX_POINT_BALANCE = 1000000;

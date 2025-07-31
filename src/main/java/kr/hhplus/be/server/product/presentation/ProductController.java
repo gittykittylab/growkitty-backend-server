@@ -1,8 +1,9 @@
 package kr.hhplus.be.server.product.presentation;
 
 import kr.hhplus.be.server.product.application.ProductService;
-import kr.hhplus.be.server.product.dto.response.ProductDetailResponse;
-import kr.hhplus.be.server.product.dto.response.ProductResponse;
+import kr.hhplus.be.server.product.domain.dto.response.ProductDetailResponse;
+import kr.hhplus.be.server.product.domain.dto.response.ProductResponse;
+import kr.hhplus.be.server.product.domain.dto.response.TopProductResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -53,5 +54,14 @@ public class ProductController {
             @RequestParam int quantity) {
         productService.decreaseStock(productId, quantity);
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 최근 3일간 가장 많이 팔린 상위 5개 상품 조회
+     */
+    @GetMapping("/top-selling")
+    public ResponseEntity<List<TopProductResponse>> getTopSellingProducts() {
+        List<TopProductResponse> topProducts = productService.getTopSellingProducts();
+        return ResponseEntity.ok(topProducts);
     }
 }
