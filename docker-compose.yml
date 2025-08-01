@@ -11,6 +11,8 @@ services:
       - MYSQL_DATABASE=hhplus
     volumes:
       - ./data/mysql/:/var/lib/mysql
+      - ./src/main/resources/data:/var/lib/mysql-files  # CSV 파일을 컨테이너 내부로 마운트
+    command: --local-infile=1 --secure-file-priv=/var/lib/mysql-files
 
 networks:
   default:

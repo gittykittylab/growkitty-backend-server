@@ -1,8 +1,9 @@
 package kr.hhplus.be.server.payment.application;
 
+import jakarta.persistence.EntityNotFoundException;
 import kr.hhplus.be.server.common.exception.PaymentException;
 import kr.hhplus.be.server.payment.domain.Payment;
-import kr.hhplus.be.server.payment.infrastructure.PaymentRepository;
+import kr.hhplus.be.server.payment.domain.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,7 +13,14 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class PaymentService {
     private final PaymentRepository paymentRepository;
-
+    
+    //결제 정보 조회
+    @Transactional(readOnly = true)
+    public Payment getPaymentByOrderId(Long orderId) {
+        return paymentRepository.findByOrderId(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("주문 ID " + orderId + "에 대한 결제 정보를 찾을 수 없습니다."));
+    }
+    
     //결제 정보 저장 (이미 포인트가 차감된 상태)
     @Transactional
     public Payment processPayment(Long orderId, Long userId, int totalAmount, int pointAmount) {
@@ -34,20 +42,21 @@ public class PaymentService {
         }
     }
     // 결제 실패 정보 저장
-//    @Transactional
-//    public Payment saveFailedPayment(Long orderId, Long userId, int totalAmount) {
-//        try {
-//            // 실패한 결제 객체 생성
-//            Payment payment = Payment.createFailedPayment(
-//                    orderId,
-//                    userId,
-//                    totalAmount
-//            );
-//
-//            return paymentRepository.save(payment);
-//
-//        } catch (Exception e) {
-//            throw new PaymentException("결제 실패 정보 저장 실패: " + e.getMessage());
-//        }
-//    }
+    @Transactional
+    public Payment saveFailedPayment(Long orderId, Long userId, int totalAmount) {
+        try {
+            // 실패한 결제 객체 생성
+            Payment payment = Payment.createFailedPayment(
+                    orderId,
+                    userId,
+                    totalAmount
+            );
+
+            return paymentRepository.save(payment);
+
+        } catch (Exception e) {
+            throw new PaymentException("결제 실패 정보 저장 실패: " + e.getMessage());
+        }
+    }
+
 }
