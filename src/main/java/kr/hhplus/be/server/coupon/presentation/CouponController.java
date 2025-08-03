@@ -3,7 +3,7 @@ package kr.hhplus.be.server.coupon.presentation;
 import kr.hhplus.be.server.coupon.application.CouponService;
 import kr.hhplus.be.server.coupon.domain.Coupon;
 
-import kr.hhplus.be.server.coupon.dto.reponse.CouponIssueResponse;
+import kr.hhplus.be.server.coupon.domain.dto.reponse.CouponIssueResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

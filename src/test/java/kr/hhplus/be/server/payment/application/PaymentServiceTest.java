@@ -3,7 +3,7 @@ package kr.hhplus.be.server.payment.application;
 import kr.hhplus.be.server.common.exception.PaymentException;
 import kr.hhplus.be.server.payment.domain.Payment;
 import kr.hhplus.be.server.payment.domain.PaymentStatus;
-import kr.hhplus.be.server.payment.infrastructure.PaymentRepository;
+import kr.hhplus.be.server.payment.domain.PaymentRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
