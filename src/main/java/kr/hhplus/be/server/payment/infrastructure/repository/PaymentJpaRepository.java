@@ -1,8 +1,7 @@
-package kr.hhplus.be.server.payment.infrastructure;
+package kr.hhplus.be.server.payment.infrastructure.repository;
 
 import kr.hhplus.be.server.payment.domain.Payment;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
 
 import java.util.Optional;
 

@@ -1,7 +1,8 @@
 package kr.hhplus.be.server.order.infrastructure;
 
 import kr.hhplus.be.server.order.domain.Order;
-import kr.hhplus.be.server.order.domain.OrderRepository;
+import kr.hhplus.be.server.order.domain.repository.OrderRepository;
+import kr.hhplus.be.server.order.infrastructure.repository.OrderJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 

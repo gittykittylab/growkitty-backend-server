@@ -8,7 +8,7 @@ import kr.hhplus.be.server.product.domain.Product;
 import kr.hhplus.be.server.product.domain.dto.response.ProductDetailResponse;
 import kr.hhplus.be.server.product.domain.dto.response.ProductResponse;
 import kr.hhplus.be.server.product.domain.dto.response.TopProductResponse;
-import kr.hhplus.be.server.product.infrastructure.ProductJpaRepository;
+import kr.hhplus.be.server.product.infrastructure.repository.ProductJpaRepository;
 import kr.hhplus.be.server.testdata.ProductTestDataLoader;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

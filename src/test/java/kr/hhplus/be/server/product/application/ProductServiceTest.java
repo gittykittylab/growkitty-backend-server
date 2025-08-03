@@ -3,7 +3,7 @@ package kr.hhplus.be.server.product.application;
 import kr.hhplus.be.server.common.exception.InsufficientStockException;
 import kr.hhplus.be.server.order.domain.OrderItem;
 import kr.hhplus.be.server.product.domain.Product;
-import kr.hhplus.be.server.product.domain.ProductRepository;
+import kr.hhplus.be.server.product.domain.repository.ProductRepository;
 import kr.hhplus.be.server.product.domain.dto.response.ProductDetailResponse;
 import kr.hhplus.be.server.product.domain.dto.response.ProductResponse;
 import org.junit.jupiter.api.BeforeEach;

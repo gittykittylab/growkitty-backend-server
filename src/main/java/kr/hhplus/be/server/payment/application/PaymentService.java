@@ -3,7 +3,7 @@ package kr.hhplus.be.server.payment.application;
 import jakarta.persistence.EntityNotFoundException;
 import kr.hhplus.be.server.common.exception.PaymentException;
 import kr.hhplus.be.server.payment.domain.Payment;
-import kr.hhplus.be.server.payment.domain.PaymentRepository;
+import kr.hhplus.be.server.payment.domain.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

@@ -1,4 +1,6 @@
-package kr.hhplus.be.server.payment.domain;
+package kr.hhplus.be.server.payment.domain.repository;
+
+import kr.hhplus.be.server.payment.domain.Payment;
 
 import java.util.Optional;
 

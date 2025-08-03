@@ -2,8 +2,8 @@ package kr.hhplus.be.server.testdata;
 
 import kr.hhplus.be.server.product.domain.Product;
 import kr.hhplus.be.server.product.domain.TopProductView;
-import kr.hhplus.be.server.product.infrastructure.ProductJpaRepository;
-import kr.hhplus.be.server.product.infrastructure.TopProductJpaRepository;
+import kr.hhplus.be.server.product.infrastructure.repository.ProductJpaRepository;
+import kr.hhplus.be.server.product.infrastructure.repository.TopProductJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
