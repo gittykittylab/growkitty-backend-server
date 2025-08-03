@@ -7,24 +7,23 @@ import kr.hhplus.be.server.order.domain.OrderItem;
 import kr.hhplus.be.server.order.dto.request.OrderItemRequest;
 import kr.hhplus.be.server.order.dto.request.OrderRequest;
 import kr.hhplus.be.server.order.dto.response.OrderResponse;
-import kr.hhplus.be.server.payment.application.PaymentService;
+import kr.hhplus.be.server.payment.application.PaymentFacade;
 import kr.hhplus.be.server.product.dto.response.ProductDetailResponse;
 import kr.hhplus.be.server.product.application.ProductService;
-import kr.hhplus.be.server.user.application.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-
+import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class OrderFacade {
     private final OrderService orderService;
     private final ProductService productService;
-    private final UserService userService;
-    private final PaymentService paymentService;
+    private final PaymentFacade paymentFacade;
 
     // 주문 생성 및 재고 처리
     @Transactional
@@ -66,17 +65,8 @@ public class OrderFacade {
         try {
             // 포인트 차감 (있는 경우)
             int usedPoints = request.getUsedAmount() != null ? request.getUsedAmount() : 0;
-            if (usedPoints > 0) {
-                userService.usePoint(userId, usedPoints);
-            }
-
-            // 결제 정보 저장
-            paymentService.processPayment(
-                    order.getId(),
-                    userId,
-                    order.getTotalAmount(),
-                    usedPoints
-            );
+            // 결제 처리 (PaymentFacade)
+            paymentFacade.processPayment(order.getId(), userId, order.getTotalAmount(), usedPoints);
 
             // 주문 상태 업데이트
             orderService.updateOrderStatus(order.getId(), "PAYMENT_COMPLETED");
@@ -84,17 +74,21 @@ public class OrderFacade {
             return new OrderResponse(order);
 
         } catch (Exception e) {
-            // 결제 실패 시 결제 실패 정보 저장
-//            paymentService.saveFailedPayment(
-//                    order.getId(),
-//                    userId,
-//                    order.getTotalAmount()
-//            );
 
             // 주문 상태 업데이트
             orderService.updateOrderStatus(order.getId(), "PAYMENT_FAILED");
 
-            // 예외 발생 (트랜잭션 롤백으로 포인트 차감도 취소됨)
+            // 결제 실패 정보 저장 (PaymentFacade)
+            paymentFacade.handlePaymentFailure(order.getId(), userId, order.getTotalAmount());
+
+            // 재고 복구 처리
+            try {
+                productService.recoverStocks(orderItems);
+            } catch (Exception recoveryEx) {
+                log.error("재고 복구 실패: 주문 ID={}, 오류={}", order.getId(), recoveryEx.getMessage(), recoveryEx);
+            }
+
+            // 예외 발생
             throw new PaymentException("결제 처리 실패: " + e.getMessage());
         }
     }
