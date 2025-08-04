@@ -6,7 +6,7 @@ import kr.hhplus.be.server.payment.domain.Payment;
 import kr.hhplus.be.server.payment.domain.PaymentStatus;
 import kr.hhplus.be.server.payment.infrastructure.repository.PaymentJpaRepository;
 import kr.hhplus.be.server.testdata.PaymentTestDataLoader;
-import kr.hhplus.be.server.user.infrastructure.UserJpaRepository;
+import kr.hhplus.be.server.user.infrastructure.repository.UserJpaRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

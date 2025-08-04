@@ -6,7 +6,7 @@ import kr.hhplus.be.server.payment.domain.Payment;
 import kr.hhplus.be.server.payment.domain.PaymentStatus;
 import kr.hhplus.be.server.payment.infrastructure.repository.PaymentJpaRepository;
 import kr.hhplus.be.server.product.infrastructure.repository.ProductJpaRepository;
-import kr.hhplus.be.server.user.infrastructure.UserJpaRepository;
+import kr.hhplus.be.server.user.infrastructure.repository.UserJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;

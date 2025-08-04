@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.user.infrastructure;
+package kr.hhplus.be.server.user.infrastructure.repository;
 
 import kr.hhplus.be.server.user.domain.PointHistory;
 import org.springframework.data.jpa.repository.JpaRepository;

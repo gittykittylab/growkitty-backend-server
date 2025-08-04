@@ -1,4 +1,6 @@
-package kr.hhplus.be.server.user.domain;
+package kr.hhplus.be.server.user.domain.repository;
+
+import kr.hhplus.be.server.user.domain.User;
 
 import java.util.Optional;
 
