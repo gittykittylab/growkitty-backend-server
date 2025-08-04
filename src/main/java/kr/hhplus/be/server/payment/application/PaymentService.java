@@ -2,7 +2,9 @@ package kr.hhplus.be.server.payment.application;
 
 import jakarta.persistence.EntityNotFoundException;
 import kr.hhplus.be.server.common.exception.PaymentException;
+import kr.hhplus.be.server.order.domain.Order;
 import kr.hhplus.be.server.payment.domain.Payment;
+import kr.hhplus.be.server.payment.domain.dto.response.PaymentResponse;
 import kr.hhplus.be.server.payment.domain.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -59,4 +61,9 @@ public class PaymentService {
         }
     }
 
+    // PaymentService.java
+    public Payment findById(Long paymentId) {
+        return paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new EntityNotFoundException("결제 정보를 찾을 수 없습니다. ID: " + paymentId));
+    }
 }
