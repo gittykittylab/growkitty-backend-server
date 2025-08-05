@@ -1,9 +1,9 @@
 package kr.hhplus.be.server.testdata;
 
 import kr.hhplus.be.server.coupon.domain.CouponPolicy;
-import kr.hhplus.be.server.coupon.infrastructure.CouponPolicyJpaRepository;
+import kr.hhplus.be.server.coupon.infrastructure.repository.CouponPolicyJpaRepository;
 import kr.hhplus.be.server.user.domain.User;
-import kr.hhplus.be.server.user.infrastructure.UserJpaRepository;
+import kr.hhplus.be.server.user.infrastructure.repository.UserJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;

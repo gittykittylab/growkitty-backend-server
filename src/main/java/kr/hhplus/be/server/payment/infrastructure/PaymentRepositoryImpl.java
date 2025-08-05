@@ -1,7 +1,9 @@
 package kr.hhplus.be.server.payment.infrastructure;
 
 import kr.hhplus.be.server.payment.domain.Payment;
-import kr.hhplus.be.server.payment.domain.PaymentRepository;
+import kr.hhplus.be.server.payment.domain.dto.response.PaymentResponse;
+import kr.hhplus.be.server.payment.domain.repository.PaymentRepository;
+import kr.hhplus.be.server.payment.infrastructure.repository.PaymentJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -20,5 +22,10 @@ public class PaymentRepositoryImpl implements PaymentRepository {
     @Override
     public Optional<Payment> findByOrderId(Long orderId) {
         return paymentJpaRepository.findByOrderId(orderId);
+    }
+
+    @Override
+    public Optional<Payment> findById(Long paymentId) {
+        return paymentJpaRepository.findById(paymentId);
     }
 }

@@ -1,21 +1,17 @@
 package kr.hhplus.be.server.testdata;
 
-import kr.hhplus.be.server.coupon.infrastructure.CouponJpaRepository;
-import kr.hhplus.be.server.order.infrastructure.OrderJpaRepository;
+import kr.hhplus.be.server.coupon.infrastructure.repository.CouponJpaRepository;
+import kr.hhplus.be.server.order.infrastructure.repository.OrderJpaRepository;
 import kr.hhplus.be.server.payment.domain.Payment;
 import kr.hhplus.be.server.payment.domain.PaymentStatus;
-import kr.hhplus.be.server.payment.infrastructure.PaymentJpaRepository;
-import kr.hhplus.be.server.product.infrastructure.ProductJpaRepository;
-import kr.hhplus.be.server.user.infrastructure.UserJpaRepository;
+import kr.hhplus.be.server.payment.infrastructure.repository.PaymentJpaRepository;
+import kr.hhplus.be.server.product.infrastructure.repository.ProductJpaRepository;
+import kr.hhplus.be.server.user.infrastructure.repository.UserJpaRepository;
 import lombok.RequiredArgsConstructor;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
-import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
