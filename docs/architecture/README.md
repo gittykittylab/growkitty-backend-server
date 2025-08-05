@@ -55,6 +55,16 @@ Controller → (Facade) → Service → Repository → DB
 * `UserController`가 `UserRepository`를 직접 참조하던 구조에서 → 해당 로직을`application 계층으로 이전`
 * 책임 분리와 계층 간 역할 명확해짐
 
+### 5. 주문(Order) 도메인 책임 분리
+- 다양한 도메인 로직(주문, 상품, 결제)이 모두 OrderFacade에 집중됨(OrderFacade 비대화)
+- 유지보수 및 테스트 어려움 발생
+> 주문은 흐름 조립에 집중, 도메인별 책임은 각 서비스/Facade로 분리
+### 6. PaymentFacade 분리 이유
+- 결제는 주문 외에도 사용 가능한 **독립 도메인**
+- 포인트 차감, 상태 업데이트 등 **복잡한 로직** 포함
+- **재사용성과 확장성** 고려해 분리
+
+
 
 ## ⚠️ 위반 사항 및 보완 포인트
 
