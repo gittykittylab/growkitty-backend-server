@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @Import({TestcontainersConfiguration.class, UserTestDataLoader.class})
-@ActiveProfiles("test")
+@ActiveProfiles("user-test")
 @Transactional
 public class UserServiceIntegrationTest {
 

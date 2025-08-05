@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
-@Profile("test")
+@Profile("product-test")
 @RequiredArgsConstructor
 public class ProductTestDataLoader implements ApplicationRunner {
 

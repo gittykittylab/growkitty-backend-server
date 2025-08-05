@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 
 @Component
-@Profile("test")
+@Profile("order-test")
 @RequiredArgsConstructor
 public class OrderTestDataLoader implements ApplicationRunner {
 
