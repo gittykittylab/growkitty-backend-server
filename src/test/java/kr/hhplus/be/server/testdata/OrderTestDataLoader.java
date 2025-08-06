@@ -123,7 +123,7 @@ public class OrderTestDataLoader implements ApplicationRunner {
                                  int productPrice, int quantity) {
         OrderItem item = new OrderItem();
         item.setOrderId(orderId);
-        item.setOrderedProductId(productId);
+        item.setProductId(productId);
         item.setOrderedProductName(productName);
         item.setOrderedProductPrice(productPrice);
         item.setOrderItemPrice(productPrice);

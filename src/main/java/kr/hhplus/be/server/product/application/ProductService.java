@@ -53,23 +53,25 @@ public class ProductService {
     }
 
     // 재고 감소
+    @Transactional
     public void decreaseStock(Long productId, int quantity){
         Product product = productRepository.findById(productId)
                 .orElseThrow(()-> new EntityNotFoundException("상품을 찾을 수 없습니다. id=" + productId));
         product.decreaseStock(quantity);
+        productRepository.save(product);
     }
     // 재고 복구
     @Transactional
     public void recoverStocks(List<OrderItem> orderItems) {
         for (OrderItem item : orderItems) {
             try {
-                productRepository.findById(item.getOrderedProductId())
+                productRepository.findById(item.getProductId())
                         .ifPresent(product -> {
                             product.increaseStock(item.getOrderItemQty());
                             productRepository.save(product);
                         });
             } catch (Exception e) {
-                throw new StockRecoveryException(item.getOrderedProductId(), e.getMessage());
+                throw new StockRecoveryException(item.getProductId(), e.getMessage());
             }
         }
     }

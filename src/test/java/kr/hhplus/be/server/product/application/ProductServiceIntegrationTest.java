@@ -190,7 +190,7 @@ public class ProductServiceIntegrationTest {
         // 주문 항목 생성
         List<OrderItem> orderItems = new ArrayList<>();
         OrderItem orderItem = new OrderItem();
-        orderItem.setOrderedProductId(productId);
+        orderItem.setProductId(productId);
         orderItem.setOrderItemQty(decreaseAmount);
         orderItems.add(orderItem);
 
