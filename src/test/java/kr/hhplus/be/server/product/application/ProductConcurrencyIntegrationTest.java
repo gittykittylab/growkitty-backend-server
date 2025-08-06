@@ -4,7 +4,6 @@ import kr.hhplus.be.server.TestcontainersConfiguration;
 import kr.hhplus.be.server.order.domain.Order;
 import kr.hhplus.be.server.order.domain.OrderItem;
 import kr.hhplus.be.server.order.domain.OrderStatus;
-import kr.hhplus.be.server.order.domain.repository.OrderRepository;
 import kr.hhplus.be.server.order.infrastructure.repository.OrderItemJpaRepository;
 import kr.hhplus.be.server.order.infrastructure.repository.OrderJpaRepository;
 import kr.hhplus.be.server.product.domain.Product;
@@ -22,12 +21,10 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
