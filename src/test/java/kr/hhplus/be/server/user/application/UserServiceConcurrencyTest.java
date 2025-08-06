@@ -35,7 +35,7 @@ public class UserServiceConcurrencyTest {
     @Test
     @DisplayName("사용자가 여러번 포인트 충전 시 동시성 문제 발생 테스트")
         // 사용자가 여러번 포인트 충전을 요청했을 때, 모두 충전되어야 함
-    void concurrentPointChargeTest() throws InterruptedException, ExecutionException {
+    void concurrentPointChargeTest() throws InterruptedException{
         // given
         // 충분한 포인트를 가진 사용자 선택
         User user = userJpaRepository.findAll().get(0);
