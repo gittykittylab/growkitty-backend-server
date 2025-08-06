@@ -7,5 +7,7 @@ public interface CouponRepository {
 
     boolean existsByUserIdAndPolicyId(Long userId, Long policyId);
 
+    long countByUserIdAndPolicyId(Long userId, Long policyId);
+
     Coupon save(Coupon coupon);
 }

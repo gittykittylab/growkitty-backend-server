@@ -22,6 +22,11 @@ public class CouponRepositoryImpl implements CouponRepository {
     }
 
     @Override
+    public long countByUserIdAndPolicyId(Long userId, Long policyId) {
+        return couponJpaRepository.countByUserIdAndPolicyId(userId, policyId);
+    }
+
+    @Override
     public Coupon save(Coupon coupon) {
         return couponJpaRepository.save(coupon);
     }

@@ -7,4 +7,6 @@ public interface CouponJpaRepository extends JpaRepository<Coupon, Long> {
     long countByPolicyId(Long policyId);
 
     boolean existsByUserIdAndPolicyId(Long userId, Long policyId);
+
+    long countByUserIdAndPolicyId(Long userId, Long policyId);
 }
