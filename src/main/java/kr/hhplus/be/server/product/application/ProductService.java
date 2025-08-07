@@ -11,6 +11,7 @@ import kr.hhplus.be.server.product.domain.dto.response.ProductDetailResponse;
 import kr.hhplus.be.server.product.domain.dto.response.ProductResponse;
 import kr.hhplus.be.server.product.domain.dto.response.TopProductResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 import org.springframework.cache.annotation.Cacheable;
@@ -60,12 +61,38 @@ public class ProductService {
         product.decreaseStock(quantity);
         productRepository.save(product);
     }
+
+    // 재고 감소 (비관적 락 적용)
+    @Transactional(isolation = Isolation.REPEATABLE_READ)
+    public void decreaseStockWithPessimisticLock(Long productId, int quantity){
+        Product product = productRepository.findByIdWithPessimisticLock(productId)
+                .orElseThrow(()-> new EntityNotFoundException("상품을 찾을 수 없습니다. id=" + productId));
+        product.decreaseStock(quantity);
+        productRepository.save(product);
+    }
+
     // 재고 복구
     @Transactional
     public void recoverStocks(List<OrderItem> orderItems) {
         for (OrderItem item : orderItems) {
             try {
                 productRepository.findById(item.getProductId())
+                        .ifPresent(product -> {
+                            product.increaseStock(item.getOrderItemQty());
+                            productRepository.save(product);
+                        });
+            } catch (Exception e) {
+                throw new StockRecoveryException(item.getProductId(), e.getMessage());
+            }
+        }
+    }
+
+    // 재고 복구 (비관적 락 적용)
+    @Transactional(isolation = Isolation.REPEATABLE_READ)
+    public void recoverStocksWithPessimisticLock(List<OrderItem> orderItems) {
+        for (OrderItem item : orderItems) {
+            try {
+                productRepository.findByIdWithPessimisticLock(item.getProductId())
                         .ifPresent(product -> {
                             product.increaseStock(item.getOrderItemQty());
                             productRepository.save(product);
