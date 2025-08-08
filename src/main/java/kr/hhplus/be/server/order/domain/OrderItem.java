@@ -15,13 +15,13 @@ public class OrderItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "order_item_id")
-    private Long id;
+    private Long orderItemId;
 
     @Column(name = "order_id", nullable = false)
     private Long orderId;
 
-    @Column(name = "ordered_product_id", nullable = false)
-    private Long orderedProductId;
+    @Column(name = "product_id", nullable = false)
+    private Long productId;
 
     @Column(name = "ordered_product_name", nullable = false, length = 100)
     private String orderedProductName;
@@ -36,9 +36,10 @@ public class OrderItem {
     private Integer orderItemQty;
 
     // 팩토리 메서드 - Product 객체로부터 생성
-    public static OrderItem createOrderItem(Product product, int orderQty) {
+    public static OrderItem createOrderItem(Product product, int orderQty, Long orderId) {
         OrderItem orderItem = new OrderItem();
-        orderItem.setOrderedProductId(product.getProductId());
+        orderItem.setOrderId(orderId);
+        orderItem.setProductId(product.getProductId());
         orderItem.setOrderedProductName(product.getProductName());
         orderItem.setOrderedProductPrice(product.getProductPrice());
         orderItem.setOrderItemPrice(product.getProductPrice());

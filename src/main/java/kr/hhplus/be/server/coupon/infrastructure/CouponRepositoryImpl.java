@@ -22,7 +22,22 @@ public class CouponRepositoryImpl implements CouponRepository {
     }
 
     @Override
+    public long countByUserIdAndPolicyId(Long userId, Long policyId) {
+        return couponJpaRepository.countByUserIdAndPolicyId(userId, policyId);
+    }
+
+    @Override
     public Coupon save(Coupon coupon) {
         return couponJpaRepository.save(coupon);
+    }
+
+    @Override
+    public long countByPolicyIdWithLock(Long policyId) {
+        return couponJpaRepository.countByPolicyIdWithLock(policyId);
+    }
+
+    @Override
+    public boolean existsByUserIdAndPolicyIdWithLock(Long userId, Long policyId) {
+        return couponJpaRepository.existsByUserIdAndPolicyIdWithLock(userId, policyId);
     }
 }

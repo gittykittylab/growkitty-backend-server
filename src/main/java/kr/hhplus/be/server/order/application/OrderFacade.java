@@ -67,6 +67,7 @@ public class OrderFacade {
 
         for (OrderItemRequest itemRequest : itemRequests) {
             Long productId = itemRequest.getProductId();
+            Long orderId = itemRequest.getOrderId();
             int quantity = itemRequest.getQuantity();
 
             // 재고 확인
@@ -76,7 +77,7 @@ public class OrderFacade {
 
             // 상품 정보 조회 및 주문 항목 생성
             Product product = productService.getProduct(productId);
-            OrderItem orderItem = OrderItem.createOrderItem(product, quantity);
+            OrderItem orderItem = OrderItem.createOrderItem(product, quantity, orderId);
             orderItems.add(orderItem);
 
             // 재고 감소

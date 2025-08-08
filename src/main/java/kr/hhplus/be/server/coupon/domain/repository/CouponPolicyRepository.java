@@ -6,4 +6,7 @@ import java.util.Optional;
 
 public interface CouponPolicyRepository {
     Optional<CouponPolicy> findById(Long policyId);
+
+    // 비관적 락이 적용된 메서드 추가
+    Optional<CouponPolicy> findByIdWithLock(Long policyId);
 }

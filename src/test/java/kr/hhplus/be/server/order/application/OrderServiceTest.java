@@ -43,7 +43,7 @@ public class OrderServiceTest {
         testOrderItems = new ArrayList<>();
         OrderItem item1 = new OrderItem();
         item1.setOrderId(orderId);
-        item1.setOrderedProductId(1L);
+        item1.setProductId(1L);
         item1.setOrderedProductName("테스트 상품 1");
         item1.setOrderedProductPrice(10000);
         item1.setOrderItemPrice(10000);
@@ -51,7 +51,7 @@ public class OrderServiceTest {
 
         OrderItem item2 = new OrderItem();
         item2.setOrderId(orderId);
-        item2.setOrderedProductId(2L);
+        item2.setProductId(2L);
         item2.setOrderedProductName("테스트 상품 2");
         item2.setOrderedProductPrice(20000);
         item2.setOrderItemPrice(20000);

@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 @Setter
 @NoArgsConstructor
 public class OrderItemRequest {
+    // 주문 ID
+    private Long orderId;
     // 상품 ID
     private Long productId;
 

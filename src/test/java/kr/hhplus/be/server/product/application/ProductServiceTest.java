@@ -61,11 +61,11 @@ public class ProductServiceTest {
 
         // 주문 항목 설정
         orderItem1 = new OrderItem();
-        orderItem1.setOrderedProductId(1L);
+        orderItem1.setProductId(1L);
         orderItem1.setOrderItemQty(10);
 
         orderItem2 = new OrderItem();
-        orderItem2.setOrderedProductId(2L);
+        orderItem2.setProductId(2L);
         orderItem2.setOrderItemQty(20);
 
         orderItems = Arrays.asList(orderItem1, orderItem2);

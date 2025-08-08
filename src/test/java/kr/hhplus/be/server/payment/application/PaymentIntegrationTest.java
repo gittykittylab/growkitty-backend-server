@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @Import({TestcontainersConfiguration.class, PaymentTestDataLoader.class})
-@ActiveProfiles("test")
+@ActiveProfiles("payment-test")
 @Transactional
 class PaymentIntegrationTest {
 
