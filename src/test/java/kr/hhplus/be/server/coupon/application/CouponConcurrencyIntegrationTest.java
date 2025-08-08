@@ -57,6 +57,24 @@ public class CouponConcurrencyIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        // 테스트용 쿠폰 정책 생성 (일반 정책)
+        CouponPolicy normalPolicy = new CouponPolicy();
+        normalPolicy.setDiscountAmount(1000);
+        normalPolicy.setExpiredDays(30);
+        normalPolicy.setTotalQuantity(100);
+        normalPolicy.setCreatedAt(LocalDateTime.now());
+        normalPolicy.setUpdatedAt(LocalDateTime.now());
+        normalPolicyId = couponPolicyRepository.save(normalPolicy).getPolicyId();
+
+        // 테스트용 쿠폰 정책 생성 (소진 테스트용 - 1개만 발급 가능)
+        CouponPolicy limitedPolicy = new CouponPolicy();
+        limitedPolicy.setDiscountAmount(2000);
+        limitedPolicy.setExpiredDays(14);
+        limitedPolicy.setTotalQuantity(1);
+        limitedPolicy.setCreatedAt(LocalDateTime.now());
+        limitedPolicy.setUpdatedAt(LocalDateTime.now());
+        limitedPolicyId = couponPolicyRepository.save(limitedPolicy).getPolicyId();
+
         // CouponTestDataLoader에서 생성한 정책 조회
         List<CouponPolicy> policies = couponPolicyRepository.findAll();
 
@@ -94,13 +112,13 @@ public class CouponConcurrencyIntegrationTest {
     @AfterEach
     void tearDown() {
         // 테스트 후 데이터 정리
-        jdbcTemplate.execute("TRUNCATE TABLE coupons");
         jdbcTemplate.execute("TRUNCATE TABLE users");
+        jdbcTemplate.execute("TRUNCATE TABLE coupons");
         jdbcTemplate.execute("TRUNCATE TABLE coupon_policies");
     }
 
     @Test
-    @DisplayName("동시에 여러 사용자가 1개만 발급 가능한 쿠폰을 요청할 때 동시성 테스트")
+    @DisplayName("동시에 여러 사용자가 1개만 발급 가능한 쿠폰을 요청할 때 동시성 테스트 - 락 미적용")
     void concurrentLimitedCouponIssueTest() throws InterruptedException {
         // given
         // 쓰레드 풀 생성
@@ -211,13 +229,28 @@ public class CouponConcurrencyIntegrationTest {
     @Test
     @DisplayName("비관적 락의 성능 영향 비교 테스트 - 충분한 수량의 쿠폰 발급 시")
     void compareLockPerformanceTest() throws InterruptedException {
-        int testThreadCount = THREAD_COUNT;
+        int testThreadCount = 50;
 
-        // 테스트 데이터 초기화
-        jdbcTemplate.execute("TRUNCATE TABLE coupons");
+        // 새로운 정책 생성 (락 없는 테스트용)
+        CouponPolicy normalPolicyNoLock = new CouponPolicy();
+        normalPolicyNoLock.setDiscountAmount(1000);
+        normalPolicyNoLock.setExpiredDays(30);
+        normalPolicyNoLock.setTotalQuantity(100);
+        normalPolicyNoLock.setCreatedAt(LocalDateTime.now());
+        normalPolicyNoLock.setUpdatedAt(LocalDateTime.now());
+        Long normalPolicyIdNoLock = couponPolicyRepository.save(normalPolicyNoLock).getPolicyId();
+
+        // 현재 테스트에만 필요한 추가 사용자 생성
+        List<Long> testUserIds = new ArrayList<>();
+        for (int i = 0; i < testThreadCount; i++) {
+            User user = new User();
+            user.setPointBalance(5000);
+            User savedUser = userRepository.save(user);
+            testUserIds.add(savedUser.getUserId());
+        }
 
         System.out.println("\n=== 비관적 락 성능 비교 테스트 시작 ===");
-        System.out.println("일반 쿠폰 정책 ID: " + normalPolicyId + ", 발급 가능 수량: 100");
+        System.out.println("락 없음 쿠폰 정책 ID: " + normalPolicyIdNoLock + ", 발급 가능 수량: 100");
         System.out.println("테스트 사용자 수: " + testThreadCount);
 
         // 1. 비관적 락 없이 쿠폰 발급 테스트
@@ -228,14 +261,14 @@ public class CouponConcurrencyIntegrationTest {
         Instant testStartNoLock = Instant.now();
 
         for (int i = 0; i < testThreadCount; i++) {
-            final Long userId = userIds.get(i);
+            final Long userId = testUserIds.get(i);
             CountDownLatch finalLatch = latch;
             executor.submit(() -> {
                 try {
                     Instant requestStart = Instant.now();
 
                     // 락이 적용되지 않은 메서드 사용
-                    couponService.issueFirstComeCoupon(normalPolicyId, userId);
+                    couponService.issueFirstComeCoupon(normalPolicyIdNoLock, userId);
 
                     Instant requestEnd = Instant.now();
                     long processingTime = Duration.between(requestStart, requestEnd).toMillis();
@@ -254,10 +287,26 @@ public class CouponConcurrencyIntegrationTest {
         Instant testEndNoLock = Instant.now();
         long totalTimeNoLock = Duration.between(testStartNoLock, testEndNoLock).toMillis();
 
-        // 2. 테스트 데이터 초기화
-        jdbcTemplate.execute("TRUNCATE TABLE coupons");
+        // 새로운 정책 생성 (락 있는 테스트용)
+        CouponPolicy normalPolicyWithLock = new CouponPolicy();
+        normalPolicyWithLock.setDiscountAmount(1000);
+        normalPolicyWithLock.setExpiredDays(30);
+        normalPolicyWithLock.setTotalQuantity(100);
+        normalPolicyWithLock.setCreatedAt(LocalDateTime.now());
+        normalPolicyWithLock.setUpdatedAt(LocalDateTime.now());
+        Long normalPolicyIdWithLock = couponPolicyRepository.save(normalPolicyWithLock).getPolicyId();
 
-        // 3. 비관적 락을 사용한 쿠폰 발급 테스트
+        System.out.println("락 적용 쿠폰 정책 ID: " + normalPolicyIdWithLock + ", 발급 가능 수량: 100");
+
+        // 3. 비관적 락을 사용한 쿠폰 발급 테스트 (새로운 사용자 생성)
+        List<Long> newUserIds = new ArrayList<>();
+        for (int i = 0; i < testThreadCount; i++) {
+            User user = new User();
+            user.setPointBalance(5000);
+            User savedUser = userRepository.save(user);
+            newUserIds.add(savedUser.getUserId());
+        }
+
         executor = Executors.newFixedThreadPool(testThreadCount);
         latch = new CountDownLatch(testThreadCount);
         List<Long> processingTimesWithLock = new ArrayList<>();
@@ -265,14 +314,14 @@ public class CouponConcurrencyIntegrationTest {
         Instant testStartWithLock = Instant.now();
 
         for (int i = 0; i < testThreadCount; i++) {
-            final Long userId = userIds.get(i);
+            final Long userId = newUserIds.get(i);
             CountDownLatch finalLatch1 = latch;
             executor.submit(() -> {
                 try {
                     Instant requestStart = Instant.now();
 
                     // 비관적 락이 적용된 메서드 사용
-                    couponService.issueFirstComeCouponWithLock(normalPolicyId, userId);
+                    couponService.issueFirstComeCouponWithLock(normalPolicyIdWithLock, userId);
 
                     Instant requestEnd = Instant.now();
                     long processingTime = Duration.between(requestStart, requestEnd).toMillis();
@@ -320,8 +369,8 @@ public class CouponConcurrencyIntegrationTest {
         System.out.println("   - 최대 처리 시간 증가율: " + String.format("%.2f%%", (maxWithLock - maxNoLock) * 100.0 / maxNoLock));
 
         // 두 테스트 모두 모든 쿠폰이 발급되었는지 확인
-        long issuedCountNoLock = testThreadCount;
-        long issuedCountWithLock = testThreadCount;
+        long issuedCountNoLock = couponRepository.countByPolicyId(normalPolicyIdNoLock);
+        long issuedCountWithLock = couponRepository.countByPolicyId(normalPolicyIdWithLock);
 
         assertThat(issuedCountNoLock).isEqualTo(testThreadCount);
         assertThat(issuedCountWithLock).isEqualTo(testThreadCount);
