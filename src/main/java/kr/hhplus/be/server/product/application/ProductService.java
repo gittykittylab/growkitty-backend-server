@@ -63,7 +63,7 @@ public class ProductService {
     }
 
     // 재고 감소 (비관적 락 적용)
-    @Transactional(isolation = Isolation.REPEATABLE_READ)
+    @Transactional
     public void decreaseStockWithPessimisticLock(Long productId, int quantity){
         Product product = productRepository.findByIdWithPessimisticLock(productId)
                 .orElseThrow(()-> new EntityNotFoundException("상품을 찾을 수 없습니다. id=" + productId));
@@ -88,7 +88,7 @@ public class ProductService {
     }
 
     // 재고 복구 (비관적 락 적용)
-    @Transactional(isolation = Isolation.REPEATABLE_READ)
+    @Transactional
     public void recoverStocksWithPessimisticLock(List<OrderItem> orderItems) {
         for (OrderItem item : orderItems) {
             try {
