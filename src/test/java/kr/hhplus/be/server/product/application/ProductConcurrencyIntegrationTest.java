@@ -10,6 +10,7 @@ import kr.hhplus.be.server.product.domain.Product;
 import kr.hhplus.be.server.product.infrastructure.repository.ProductJpaRepository;
 import kr.hhplus.be.server.testdata.ProductTestDataLoader;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -56,12 +57,6 @@ public class ProductConcurrencyIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        //테이블 초기화
-//        jdbcTemplate.execute("TRUNCATE TABLE products");
-        jdbcTemplate.execute("TRUNCATE TABLE users");
-        jdbcTemplate.execute("TRUNCATE TABLE orders");
-        jdbcTemplate.execute("TRUNCATE TABLE order_items");
-
         // ProductTestDataLoader에서 생성한 상품 중 하나 선택
         List<Product> products = productJpaRepository.findAll();
         Product testProduct = products.get(0);
@@ -77,8 +72,17 @@ public class ProductConcurrencyIntegrationTest {
                 ", 설정된 재고: " + TEST_STOCK + ", 테스트 시작 시간: " + testStartTime);
     }
 
+    @AfterEach
+    void tearDown() {
+        // 테스트 후 데이터 정리
+//        jdbcTemplate.execute("TRUNCATE TABLE products");
+        jdbcTemplate.execute("TRUNCATE TABLE users");
+        jdbcTemplate.execute("TRUNCATE TABLE orders");
+        jdbcTemplate.execute("TRUNCATE TABLE order_items");
+    }
+
     @Test
-    @DisplayName("동시에 여러 사용자가 동일한 상품의 재고 차감을 요청할 때 동시성 테스트")
+    @DisplayName("동시에 여러 사용자가 동일한 상품의 재고 차감을 요청할 때 동시성 테스트 - 락 미적용")
     void concurrentStockDecreaseTest() throws InterruptedException{
         // given
         // 쓰레드 풀 생성
@@ -138,7 +142,7 @@ public class ProductConcurrencyIntegrationTest {
     }
 
     @Test
-    @DisplayName("동시에 여러 동일한 상품의 재고 복원을 요청할 때 동시성 테스트")
+    @DisplayName("동시에 여러 동일한 상품의 재고 복원을 요청할 때 동시성 테스트 - 락 미적용")
     void concurrentStockIncreaseTest() throws InterruptedException {
         // given
         // 초기 재고를 먼저 감소시킨다 (테스트를 위해)
@@ -253,7 +257,6 @@ public class ProductConcurrencyIntegrationTest {
                         // 재고 확인 후 차감 시도
                         if (productService.checkStock(productId, DECREASE_AMOUNT)) {
                             System.out.println(Thread.currentThread().getName() + " 차감 요청 시작");
-                            // REPEATABLE_READ 메서드 사용
                             productService.decreaseStockWithPessimisticLock(productId, DECREASE_AMOUNT);
                             System.out.println(Thread.currentThread().getName() + " 차감 요청 완료");
                         } else {
@@ -270,11 +273,6 @@ public class ProductConcurrencyIntegrationTest {
             // 모든 스레드가 완료될 때까지 대기
             latch.await();
             System.out.println("모든 차감 요청 완료");
-
-            // 성능 측정을 위한 종료 시간 기록
-            long endTime = System.currentTimeMillis();
-            long duration = endTime - startTime;
-            System.out.println("REPEATABLE_READ 방식 재고 차감 실행 시간: " + duration + "ms");
 
             // then
             // 차감 후 데이터
@@ -373,11 +371,6 @@ public class ProductConcurrencyIntegrationTest {
             // 모든 스레드가 완료될 때까지 대기
             latch.await();
             System.out.println("모든 복원 요청 완료");
-
-            // 성능 측정을 위한 종료 시간 기록
-            long endTime = System.currentTimeMillis();
-            long duration = endTime - startTime;
-            System.out.println("비관적 락 방식 재고 복원 실행 시간: " + duration + "ms");
 
             // then
             // 복원 후 데이터
