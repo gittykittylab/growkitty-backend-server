@@ -24,6 +24,9 @@ public class User {
     @Column(name = "point_balance", nullable = false)
     private Integer pointBalance = 0;
 
+//    @Version
+//    private Long version;
+
     // 최대 포인트 한도 상수
     private static final int MAX_POINT_BALANCE = 1000000;
 

@@ -33,9 +33,9 @@ public class OrderItemResponse {
 
     // OrderItem 엔티티로부터 DTO 생성하는 생성자
     public OrderItemResponse(OrderItem orderItem) {
-        this.id = orderItem.getId();
+        this.id = orderItem.getOrderItemId();
         this.orderId = orderItem.getOrderId();
-        this.productId = orderItem.getOrderedProductId();
+        this.productId = orderItem.getProductId();
         this.productName = orderItem.getOrderedProductName();
         this.productPrice = orderItem.getOrderedProductPrice();
         this.orderPrice = orderItem.getOrderItemPrice();

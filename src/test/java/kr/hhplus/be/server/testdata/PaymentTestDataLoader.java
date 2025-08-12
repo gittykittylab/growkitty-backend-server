@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 
 @Component
-@Profile("test")
+@Profile("payment-test")
 @RequiredArgsConstructor
 public class PaymentTestDataLoader implements ApplicationRunner {
     private final PaymentJpaRepository paymentJpaRepository;

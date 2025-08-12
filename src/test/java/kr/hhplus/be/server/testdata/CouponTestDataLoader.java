@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 
 @Component
-@Profile("test")
+@Profile("coupon-test")
 @RequiredArgsConstructor
 public class CouponTestDataLoader implements ApplicationRunner {
 

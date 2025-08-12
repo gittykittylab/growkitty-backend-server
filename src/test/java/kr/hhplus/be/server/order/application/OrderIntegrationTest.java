@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @Import({TestcontainersConfiguration.class, ProductTestDataLoader.class})
-@ActiveProfiles("test")
+@ActiveProfiles("order-test")
 @Transactional
 class OrderIntegrationTest {
 
