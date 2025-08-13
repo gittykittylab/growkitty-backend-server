@@ -29,6 +29,9 @@ spring:
       org.hibernate.SQL: debug
       org.hibernate.type.descriptor.sql: trace
       kr.hhplus.be.server: debug
+      org.springframework.transaction: debug
+      org.springframework.orm.jpa: debug
+      org.springframework.jdbc.datasource: debug
 ---
 spring.config.activate.on-profile: local, test
 
