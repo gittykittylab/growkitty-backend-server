@@ -1,6 +1,7 @@
 package kr.hhplus.be.server.product.application;
 
 import kr.hhplus.be.server.common.exception.EntityNotFoundException;
+import kr.hhplus.be.server.common.exception.InsufficientStockException;
 import kr.hhplus.be.server.common.exception.StockRecoveryException;
 import kr.hhplus.be.server.common.lock.DistributedLock;
 import kr.hhplus.be.server.order.domain.OrderItem;
@@ -12,6 +13,8 @@ import kr.hhplus.be.server.product.domain.dto.response.ProductDetailResponse;
 import kr.hhplus.be.server.product.domain.dto.response.ProductResponse;
 import kr.hhplus.be.server.product.domain.dto.response.TopProductResponse;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 import org.springframework.cache.annotation.Cacheable;
@@ -26,6 +29,8 @@ import java.util.stream.Collectors;
 public class ProductService {
     private final ProductRepository productRepository;
     private final TopProductRepository topProductRepository;
+
+    private static final Logger log = LoggerFactory.getLogger(ProductService.class);
 
     // 상품 조회
     public Product getProduct(Long productId) {
@@ -57,10 +62,15 @@ public class ProductService {
 
     // 재고 감소
     @Transactional
-    @DistributedLock(key = "PRODUCT:STOCK:#productId", waitTime = 3, leaseTime = 5)
     public void decreaseStock(Long productId, int quantity){
         Product product = productRepository.findById(productId)
-                .orElseThrow(()-> new EntityNotFoundException("상품을 찾을 수 없습니다. id=" + productId));
+                .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다. id=" + productId));
+
+        // 재고 확인 및 감소를 하나의 락 안에서 처리
+        if (product.getStockQty() < quantity) {
+            throw new InsufficientStockException("재고가 부족합니다.");
+        }
+
         product.decreaseStock(quantity);
         productRepository.save(product);
     }
@@ -76,7 +86,6 @@ public class ProductService {
 
     // 재고 복구
     @Transactional
-    @DistributedLock(key = "PRODUCT:STOCK:#productId", waitTime = 3, leaseTime = 5)
     public void recoverStocks(List<OrderItem> orderItems) {
         // 상품 ID 기준 정렬 - 데드락 방지
         List<OrderItem> sortedItems = orderItems.stream()
@@ -112,8 +121,15 @@ public class ProductService {
         }
     }
     // 최근 3일간 가장 많이 팔린 상위 5개 상품 조회
-    @Cacheable(value = "topProducts", key = "'last3days'")
     public List<TopProductResponse> getTopSellingProducts() {
+        List<TopProductView> topProducts = topProductRepository.findAll();
+        return topProducts.stream()
+                .map(TopProductResponse::from)
+                .collect(Collectors.toList());
+    }
+    // 최근 3일간 가장 많이 팔린 상위 5개 상품 조회 － 캐시 적용
+    @Cacheable(value = "topProducts", key = "'last3days'")
+    public List<TopProductResponse> getTopSellingProductsWithCache() {
         List<TopProductView> topProducts = topProductRepository.findAll();
         return topProducts.stream()
                 .map(TopProductResponse::from)
