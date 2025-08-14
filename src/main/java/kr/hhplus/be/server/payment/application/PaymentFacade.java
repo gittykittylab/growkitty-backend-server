@@ -37,6 +37,7 @@ public class PaymentFacade {
     }
 
     // 결제 실패 처리
+    @Transactional
     public void handlePaymentFailure(Long orderId, Long userId, int totalAmount) {
         try {
             // 결제 실패 정보 저장

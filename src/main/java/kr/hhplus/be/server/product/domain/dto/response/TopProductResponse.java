@@ -6,11 +6,15 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
+import java.io.Serializable;
+
 @Getter
 @Setter
 @Builder
 @RequiredArgsConstructor
-public class TopProductResponse {
+public class TopProductResponse implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private final Long productId;
     private final String productName;
     private final Integer productPrice;

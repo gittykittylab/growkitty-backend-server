@@ -17,7 +17,6 @@ public class CouponService {
 
     /**
      * 선착순 쿠폰 발급 기능
-     * @return 생성된 쿠폰 엔티티
      */
     @Transactional
     public Coupon issueFirstComeCoupon(Long policyId, Long userId) {
@@ -37,7 +36,6 @@ public class CouponService {
             throw new RuntimeException("이미 발급받은 쿠폰입니다.");
         }
 
-        // 쿠폰 생성 (도메인 메서드 사용)
         Coupon coupon = Coupon.createFromPolicy(policy, userId);
         return couponRepository.save(coupon);
     }
@@ -63,7 +61,6 @@ public class CouponService {
             throw new RuntimeException("이미 발급받은 쿠폰입니다.");
         }
 
-        // 쿠폰 생성
         Coupon coupon = Coupon.createFromPolicy(policy, userId);
         return couponRepository.save(coupon);
     }

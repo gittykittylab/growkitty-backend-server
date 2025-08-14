@@ -11,6 +11,9 @@ spring:
       connection-timeout: 10000
       max-lifetime: 60000
     driver-class-name: com.mysql.cj.jdbc.Driver
+  redis:
+    host: localhost
+    port: 6379
   jpa:
     open-in-view: false
     generate-ddl: false
@@ -26,6 +29,9 @@ spring:
       org.hibernate.SQL: debug
       org.hibernate.type.descriptor.sql: trace
       kr.hhplus.be.server: debug
+      org.springframework.transaction: debug
+      org.springframework.orm.jpa: debug
+      org.springframework.jdbc.datasource: debug
 ---
 spring.config.activate.on-profile: local, test
 
