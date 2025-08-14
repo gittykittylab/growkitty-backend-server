@@ -2,6 +2,7 @@ package kr.hhplus.be.server.product.application;
 
 import kr.hhplus.be.server.common.exception.EntityNotFoundException;
 import kr.hhplus.be.server.common.exception.StockRecoveryException;
+import kr.hhplus.be.server.common.lock.DistributedLock;
 import kr.hhplus.be.server.order.domain.OrderItem;
 import kr.hhplus.be.server.product.domain.Product;
 import kr.hhplus.be.server.product.domain.repository.ProductRepository;
@@ -11,10 +12,11 @@ import kr.hhplus.be.server.product.domain.dto.response.ProductDetailResponse;
 import kr.hhplus.be.server.product.domain.dto.response.ProductResponse;
 import kr.hhplus.be.server.product.domain.dto.response.TopProductResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 import org.springframework.cache.annotation.Cacheable;
+
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -55,6 +57,7 @@ public class ProductService {
 
     // 재고 감소
     @Transactional
+    @DistributedLock(key = "PRODUCT:STOCK:#productId", waitTime = 3, leaseTime = 5)
     public void decreaseStock(Long productId, int quantity){
         Product product = productRepository.findById(productId)
                 .orElseThrow(()-> new EntityNotFoundException("상품을 찾을 수 없습니다. id=" + productId));
@@ -73,8 +76,14 @@ public class ProductService {
 
     // 재고 복구
     @Transactional
+    @DistributedLock(key = "PRODUCT:STOCK:#productId", waitTime = 3, leaseTime = 5)
     public void recoverStocks(List<OrderItem> orderItems) {
-        for (OrderItem item : orderItems) {
+        // 상품 ID 기준 정렬 - 데드락 방지
+        List<OrderItem> sortedItems = orderItems.stream()
+                .sorted(Comparator.comparing(OrderItem::getProductId))
+                .toList();
+
+        for (OrderItem item : sortedItems) {
             try {
                 productRepository.findById(item.getProductId())
                         .ifPresent(product -> {
