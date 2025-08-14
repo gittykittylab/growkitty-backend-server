@@ -1,5 +1,6 @@
 package kr.hhplus.be.server.payment.application;
 
+import kr.hhplus.be.server.common.lock.DistributedLock;
 import kr.hhplus.be.server.payment.domain.Payment;
 import kr.hhplus.be.server.payment.domain.PaymentStatus;
 import kr.hhplus.be.server.payment.domain.dto.response.PaymentResponse;
@@ -18,6 +19,7 @@ public class PaymentFacade {
 
     // 결제 프로세스 처리
     @Transactional
+    @DistributedLock(key = "PAYMENT:USER:#userId", waitTime = 3, leaseTime = 10)
     public void processPayment(Long orderId, Long userId, int totalAmount, int usedPoints) {
         // 포인트 차감 (있는 경우)
         if (usedPoints > 0) {
@@ -37,6 +39,8 @@ public class PaymentFacade {
     }
 
     // 결제 실패 처리
+    @Transactional
+    @DistributedLock(key = "PAYMENT:USER:#userId", waitTime = 3, leaseTime = 10)
     public void handlePaymentFailure(Long orderId, Long userId, int totalAmount) {
         try {
             // 결제 실패 정보 저장
