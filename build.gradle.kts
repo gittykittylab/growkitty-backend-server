@@ -55,7 +55,15 @@ dependencies {
 	testAnnotationProcessor("org.projectlombok:lombok:1.18.30")
 
     // redisson
-    implementation("org.redisson:redisson-spring-boot-starter:3.18.0")
+//    implementation("org.redisson:redisson-spring-boot-starter:3.18.0")
+    implementation("org.redisson:redisson-spring-boot-starter:3.50.0")
+
+    implementation ("com.fasterxml.jackson.core:jackson-databind")
+    implementation ("org.springframework.boot:spring-boot-starter-data-redis")
+    implementation ("org.springframework.boot:spring-boot-starter-cache")
+    implementation ("com.fasterxml.jackson.core:jackson-databind")
+    implementation ("org.springframework.boot:spring-boot-starter")
+
 }
 
 tasks.withType<Test> {
