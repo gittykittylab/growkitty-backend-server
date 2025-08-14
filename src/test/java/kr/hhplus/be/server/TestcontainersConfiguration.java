@@ -41,5 +41,8 @@ public class TestcontainersConfiguration {
 		if (MYSQL_CONTAINER.isRunning()) {
 			MYSQL_CONTAINER.stop();
 		}
+        if (REDIS_CONTAINER.isRunning()) {
+            REDIS_CONTAINER.stop();
+        }
 	}
 }
