@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.common.cache;
+package kr.hhplus.be.server.config.redis;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
