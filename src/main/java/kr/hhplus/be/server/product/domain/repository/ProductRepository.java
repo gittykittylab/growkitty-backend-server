@@ -3,6 +3,7 @@ package kr.hhplus.be.server.product.domain.repository;
 
 import kr.hhplus.be.server.product.domain.Product;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,4 +16,6 @@ public interface ProductRepository {
     void save(Product product);
 
     Optional<Product> findByIdWithPessimisticLock(Long productId);
+
+    List<Product> findAllById(List<Long> topProductsIdsLong);
 }
