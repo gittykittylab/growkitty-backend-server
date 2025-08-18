@@ -2,6 +2,7 @@ package kr.hhplus.be.server.order.application;
 
 import kr.hhplus.be.server.common.exception.InsufficientStockException;
 import kr.hhplus.be.server.common.exception.PaymentException;
+import kr.hhplus.be.server.common.lock.DistributedLock;
 import kr.hhplus.be.server.order.domain.Order;
 import kr.hhplus.be.server.order.domain.OrderItem;
 import kr.hhplus.be.server.order.domain.OrderStatus;
@@ -38,7 +39,10 @@ public class OrderFacade {
      * 3. 결제 처리
      */
     @Transactional
+    @DistributedLock(key = "multi:#request.getProductIds()", waitTime = 3, leaseTime = 10)
     public OrderResponse createOrder(OrderRequest request) {
+        log.info("트랜잭션 시작 - OrderFacade.createOrder, 사용자: {}", request.getUserId());
+
         Long userId = request.getUserId();
 
         try {
@@ -50,6 +54,8 @@ public class OrderFacade {
 
             // 3. 결제 처리
             processPayment(order, userId, request.getUsedAmount(), orderItems);
+
+            log.info("트랜잭션 종료 - OrderFacade.createOrder, 사용자: {}, 주문ID: {}", userId, order.getOrderId());
 
             return new OrderResponse(order);
         } catch (Exception e) {
@@ -69,11 +75,6 @@ public class OrderFacade {
             Long productId = itemRequest.getProductId();
             Long orderId = itemRequest.getOrderId();
             int quantity = itemRequest.getQuantity();
-
-            // 재고 확인
-            if (!productService.checkStock(productId, quantity)) {
-                throw new InsufficientStockException("재고가 부족합니다. 상품 ID: " + productId);
-            }
 
             // 상품 정보 조회 및 주문 항목 생성
             Product product = productService.getProduct(productId);
