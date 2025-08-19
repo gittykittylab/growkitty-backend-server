@@ -3,12 +3,9 @@ package kr.hhplus.be.server.product.application;
 import kr.hhplus.be.server.common.exception.EntityNotFoundException;
 import kr.hhplus.be.server.common.exception.InsufficientStockException;
 import kr.hhplus.be.server.common.exception.StockRecoveryException;
-import kr.hhplus.be.server.config.redis.RedisConfig;
 import kr.hhplus.be.server.order.domain.OrderItem;
 import kr.hhplus.be.server.product.domain.Product;
 import kr.hhplus.be.server.product.domain.repository.ProductRepository;
-import kr.hhplus.be.server.product.domain.repository.TopProductRepository;
-import kr.hhplus.be.server.product.domain.TopProductView;
 import kr.hhplus.be.server.product.domain.dto.response.ProductDetailResponse;
 import kr.hhplus.be.server.product.domain.dto.response.ProductResponse;
 import kr.hhplus.be.server.product.domain.dto.response.TopProductResponse;
@@ -17,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
-import org.springframework.cache.annotation.Cacheable;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -43,7 +39,7 @@ public class ProductService {
     public List<ProductResponse> getProducts(){
         List<Product> products = productRepository.findAll();
         return  products.stream()
-                .map(product -> new ProductResponse(product))
+                .map(ProductResponse::new)
                 .collect(Collectors.toList());
     }
 
@@ -124,11 +120,11 @@ public class ProductService {
 
     // 최근 3일간 가장 많이 팔린 상위 5개 상품 조회
     public List<TopProductResponse> getTopSellingProducts() {
-        // 1. 3일간의 날짜 기반 키 생성
+        // 3일간의 날짜 기반 키 생성
         List<String> dataKeys = List.of(
                 "product_sales:" +LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE),
-                "product_sales" +LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE),
-                "product_sales" +LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
+                "product_sales" +LocalDate.now().minusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE),
+                "product_sales" +LocalDate.now().minusDays(2).format(DateTimeFormatter.ISO_LOCAL_DATE)
         );
         // 데이터 합산 임시 키
         String unionKey = "top_products:3days";
@@ -145,7 +141,7 @@ public class ProductService {
         if(topProductIdsString == null || topProductIdsString.isEmpty()){
             return Collections.emptyList();
         }
-        // DB에서 관련 상품 상세 조회
+        // DB에서 top 5 상품 상세 조회
         List<Long> topProductsIdsLong =  topProductIdsString.stream()
                 .map(Long::valueOf)
                 .toList();
@@ -154,28 +150,12 @@ public class ProductService {
                 .stream()
                 .collect(Collectors.toMap(Product::getProductId, p -> p));
 
-        // Redis 순서대로 정렬하여 반환
         return topProductsIdsLong.stream()
                 .map(productMap::get)
                 .filter(Objects::nonNull)
-                .map(product -> TopProductResponse.builder()
-                        .productId(product.getProductId())
-                        .productName(product.getProductName())
-                        .productPrice(product.getProductPrice())
-                        .stockQty(product.getStockQty())
-                        .build())
+                .map(TopProductResponse::from)
                 .collect(Collectors.toList());
     }
-
-//    // 최근 3일간 가장 많이 팔린 상위 5개 상품 조회 － 캐시 적용
-//    @Cacheable(value = "topProducts", key = "'last3days'")
-//    public List<TopProductResponse> getTopSellingProductsWithCache() {
-//        List<TopProductView> topProducts = topProductRepository.findAll();
-//        return topProducts.stream()
-//                .map(TopProductResponse::from)
-//                .collect(Collectors.toList());
-//    }
-
 
     // 주문 성공 시 판매량 redis 업데이트
     @Transactional
@@ -199,4 +179,12 @@ public class ProductService {
         }
     }
 
+//    // 최근 3일간 가장 많이 팔린 상위 5개 상품 조회 － 캐시 적용
+//    @Cacheable(value = "topProducts", key = "'last3days'")
+//    public List<TopProductResponse> getTopSellingProductsWithCache() {
+//        List<TopProductView> topProducts = topProductRepository.findAll();
+//        return topProducts.stream()
+//                .map(TopProductResponse::from)
+//                .collect(Collectors.toList());
+//    }
 }
