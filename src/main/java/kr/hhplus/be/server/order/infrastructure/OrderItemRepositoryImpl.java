@@ -21,4 +21,9 @@ public class OrderItemRepositoryImpl implements OrderItemRepository {
     public void save(OrderItem item) {
         orderItemJpaRepository.save(item);
     }
+
+    @Override
+    public List<OrderItem> findAll() {
+        return orderItemJpaRepository.findAll();
+    }
 }
