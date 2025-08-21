@@ -33,7 +33,7 @@ public class RedisConfig {
     @Bean
     public RedisScript<List> couponIssueScript() {
         DefaultRedisScript<List> script = new DefaultRedisScript<>();
-        script.setLocation(new ClassPathResource("scripts/coupon_issue.lua"));
+        script.setLocation(new ClassPathResource("script/coupon_issue.lua"));
         script.setResultType(List.class);  // 여기는 원시 타입 사용
         return script;
     }
