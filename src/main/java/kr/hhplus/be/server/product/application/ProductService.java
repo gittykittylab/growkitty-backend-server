@@ -122,9 +122,9 @@ public class ProductService {
     public List<TopProductResponse> getTopSellingProducts() {
         // 3일간의 날짜 기반 키 생성
         List<String> dataKeys = List.of(
-                "product_sales:" +LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE),
-                "product_sales" +LocalDate.now().minusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE),
-                "product_sales" +LocalDate.now().minusDays(2).format(DateTimeFormatter.ISO_LOCAL_DATE)
+                "product_sales:" + LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE),
+                "product_sales:" + LocalDate.now().minusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE),
+                "product_sales:" + LocalDate.now().minusDays(2).format(DateTimeFormatter.ISO_LOCAL_DATE)
         );
         // 데이터 합산 임시 키
         String unionKey = "top_products:3days";
