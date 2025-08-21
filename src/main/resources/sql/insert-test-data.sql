@@ -25,6 +25,22 @@ VALUES
     (9, '웹캠', 120000, 35, NOW()),
     (10, '스피커', 250000, 28, NOW());
 
+-- 쿠폰 정책 데이터 삽입
+INSERT INTO coupon_policies (policy_id, discount_amount, expired_days, total_quantity, created_at, updated_at)
+VALUES
+    (1, 10000, 30, 100, NOW(), NOW()),
+    (2, 50000, 7, 10, NOW(), NOW()),
+    (3, 5000, 10, 5, NOW(), NOW()),
+    (4, 3000, 15, 1000, NOW(), NOW()),
+    (5, 20000, 1, 50, NOW(), NOW());
+
+-- 테스트용 쿠폰 데이터 삽입 (일부 이미 발급된 상태)
+INSERT INTO coupons (coupon_id, user_id, policy_id, expired_at, coupon_status, created_at, updated_at)
+VALUES
+    (1, 1, 1, DATE_ADD(NOW(), INTERVAL 30 DAY), 'AVAILABLE', NOW(), NOW()),
+    (2, 2, 1, DATE_ADD(NOW(), INTERVAL 30 DAY), 'USED', NOW(), NOW()),
+    (3, 3, 2, DATE_ADD(NOW(), INTERVAL 7 DAY), 'AVAILABLE', NOW(), NOW());
+
 -- 주문 데이터 삽입 (오늘 날짜)
 INSERT INTO orders (order_id, user_id, coupon_id, order_status, ordered_at, total_amount, coupon_discount_amount)
 VALUES
