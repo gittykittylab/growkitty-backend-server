@@ -30,31 +30,37 @@ public class CouponService {
     private static final String COUPON_QUEUE = "coupon:queue:%d";         // List - 대기열
     private static final String COUPON_ISSUED = "coupon:issued:%d";       // Set - 발급받은 사용자
     private static final String COUPON_STOCK = "coupon:stock:%d";         // List - 재고
+    private static final String COUPON_SET = "coupon:queue:set:%d";
     /**
      * 쿠폰 발급 요청 - 대기열 진입
      */
     public WaitingQueueResponse requestCoupon(Long policyId, Long userId) {
         String queueKey = String.format(COUPON_QUEUE, policyId);
         String issuedKey = String.format(COUPON_ISSUED, policyId);
+        String queueSetKey = String.format(COUPON_SET, policyId);
 
-        // 1. 중복 발급 체크 (SISMEMBER)
-        if (redisTemplate.opsForSet().isMember(issuedKey, userId.toString())) {
+        // 1. 중복 발급 체크
+        if (Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(issuedKey, userId.toString()))) {
             return WaitingQueueResponse.completed("이미 발급받은 쿠폰입니다.");
         }
 
-        // 2. 대기열에 이미 있는지 체크
+        // 2. Set으로 중복 방지
+        Long addResult = redisTemplate.opsForSet().add(queueSetKey, userId.toString());
+
+        if (addResult != null && addResult > 0) {
+            redisTemplate.opsForList().leftPush(queueKey, userId.toString());
+        }
+
+        // 3. 위치 조회
         List<String> queue = redisTemplate.opsForList().range(queueKey, 0, -1);
         if (queue != null && queue.contains(userId.toString())) {
-            int position = queue.indexOf(userId.toString()) + 1;
+            int position = queue.size() - queue.indexOf(userId.toString());
             return WaitingQueueResponse.waiting(position, queue.size());
         }
 
-        // 3. 대기열 진입 (LPUSH - 순서 보장)
-        redisTemplate.opsForList().leftPush(queueKey, userId.toString());
-
-        // 4. 현재 위치 반환
-        Long totalWaiting = redisTemplate.opsForList().size(queueKey);
-        return WaitingQueueResponse.waiting(totalWaiting.intValue(), totalWaiting);
+        // 4. 예외 상황
+        log.error("대기열 데이터 정합성 오류 - 사용자: {}, 정책: {}", userId, policyId);
+        throw new IllegalStateException("대기열 처리 중 오류가 발생했습니다.");
     }
 
     /**
@@ -65,7 +71,7 @@ public class CouponService {
         String issuedKey = String.format(COUPON_ISSUED, policyId);
 
         // 1. 발급 완료 체크 (SISMEMBER)
-        if (redisTemplate.opsForSet().isMember(issuedKey, userId.toString())) {
+        if (Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(issuedKey, userId.toString()))) {
             return WaitingQueueResponse.completed("쿠폰이 발급되었습니다.");
         }
 
