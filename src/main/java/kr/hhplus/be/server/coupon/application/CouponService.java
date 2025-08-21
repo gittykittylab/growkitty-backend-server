@@ -8,6 +8,7 @@ import kr.hhplus.be.server.coupon.domain.repository.CouponRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,7 @@ public class CouponService {
     private final CouponPolicyRepository couponPolicyRepository;
     private final CouponRepository couponRepository;
     private final RedisTemplate<String, String> redisTemplate;
+    private final RedisScript<List> couponIssueScript;
 
     // Redis 키 패턴
     private static final String COUPON_QUEUE = "coupon:queue:%d";         // List - 대기열
@@ -79,7 +81,7 @@ public class CouponService {
     }
 
     /**
-     * 대기열 처리 스케줄러 (2초마다) - 모든 활성 정책 처리
+     * 대기열 처리 스케줄러 (2초마다)
      */
     @Scheduled(fixedDelay = 2000)
     public void processWaitingQueues() {
@@ -96,7 +98,7 @@ public class CouponService {
     }
 
     /**
-     * 대기열 처리 - 핵심 로직
+     * 대기열 처리 (Lua 스크립트 사용)
      */
     private void processQueue(Long policyId) {
         String queueKey = String.format(COUPON_QUEUE, policyId);
@@ -109,35 +111,47 @@ public class CouponService {
         // 한 번에 최대 10명 처리
         int processCount = 0;
         while (processCount < 10) {
-            // 재고 차감 (LPOP)
-            String stock = redisTemplate.opsForList().leftPop(stockKey);
-            if (stock == null) {
-                log.info("재고 소진 - 정책: {}", policyId);
-                break;
-            }
-
-            // 대기열에서 사용자 가져오기 (RPOP - FIFO)
-            String userId = redisTemplate.opsForList().rightPop(queueKey);
-            if (userId == null) {
-                // 대기열 비어있음 - 재고 복구
-                redisTemplate.opsForList().leftPush(stockKey, stock);
-                break;
-            }
-
             try {
-                // 실제 쿠폰 발급 (DB 저장)
-                issueCoupon(policyId, Long.valueOf(userId));
+                // Lua 스크립트를 사용하여 원자적으로 재고와 대기열에서 처리
+                @SuppressWarnings("unchecked")
+                List<String> result = (List<String>) redisTemplate.execute(
+                        couponIssueScript,
+                        List.of(stockKey, queueKey) // KEYS[1] = stockKey, KEYS[2] = queueKey
+                );
 
-                // 발급 완료 기록 (SADD)
-                redisTemplate.opsForSet().add(issuedKey, userId);
+                // 스크립트 실행 결과가 null이면 재고가 없거나 대기열이 비어있음
+                if (result == null || result.isEmpty()) {
+                    log.info("처리할 사용자가 없거나 재고가 소진되었습니다 - 정책: {}", policyId);
+                    break;
+                }
 
-                log.info("쿠폰 발급 완료 - 사용자: {}", userId);
-                processCount++;
+                // Lua 스크립트에서 반환된 결과: [stock, userId]
+                String stock = result.get(0);
+                String userId = result.get(1);
+
+                try {
+                    // 실제 쿠폰 발급 (DB 저장)
+                    issueCoupon(policyId, Long.valueOf(userId));
+
+                    // 발급 완료 기록 (SADD)
+                    redisTemplate.opsForSet().add(issuedKey, userId);
+
+                    log.info("쿠폰 발급 완료 - 사용자: {}, 정책: {}", userId, policyId);
+                    processCount++;
+
+                } catch (Exception e) {
+                    log.error("쿠폰 발급 실패 - 사용자: {}, 정책: {}, 오류: {}", userId, policyId, e.getMessage());
+
+                    // DB 발급 실패 시 Redis에서 꺼낸 재고와 사용자를 복구
+                    // 재고 복구 (다시 앞쪽에 추가)
+                    redisTemplate.opsForList().leftPush(stockKey, stock);
+                    // 사용자를 대기열 뒤쪽에 다시 추가 (재시도 기회 제공)
+                    redisTemplate.opsForList().rightPush(queueKey, userId);
+                }
 
             } catch (Exception e) {
-                log.error("쿠폰 발급 실패 - 사용자: {}, 오류: {}", userId, e.getMessage());
-                // 실패 시 재고 복구
-                redisTemplate.opsForList().leftPush(stockKey, stock);
+                log.error("Lua 스크립트 실행 실패 - 정책: {}, 오류: {}", policyId, e.getMessage());
+                break; // 스크립트 실행 자체가 실패하면 루프 중단
             }
         }
     }
