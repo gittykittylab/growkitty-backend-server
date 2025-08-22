@@ -23,21 +23,42 @@ private static final String COUPON_QUEUE = "coupon:queue:%d";
 - **용도**: 사용자 요청 순서 관리
 - **특징**: FIFO(First In, First Out) 방식으로 공정한 선착순 보장
 
-### 2. 발급 완료 사용자 추적 (Set)
-```java
-private static final String COUPON_ISSUED = "coupon:issued:%d";
-```
-- **구조**: Redis Set
-- **용도**: 중복 발급 방지를 위한 발급 완료 사용자 저장
-- **특징**: O(1) 시간복잡도로 빠른 중복 체크
+**왜 Sorted Set이 아닌 List를 선택했는가?**
+- **단순성**: 선착순은 단순히 요청 순서만 보장하면 되므로 List의 LPUSH-RPOP 메커니즘이 가장 직관적
+- **성능**: Sorted Set의 스코어 계산과 정렬 오버헤드 불필요
+- **메모리 효율성**: 타임스탬프나 우선순위 점수를 별도로 저장할 필요 없음
+- **적합성**: 우선순위 기반 대기열이 아닌 순수 FIFO 정책에는 List가 최적
 
-### 3. 재고 관리 (List)
+### 2. 재고 관리 (List)
 ```java
 private static final String COUPON_STOCK = "coupon:stock:%d";
 ```
 - **구조**: Redis List
 - **용도**: 발급 가능한 쿠폰 재고 토큰 관리
 - **특징**: 토큰 기반으로 정확한 재고 제어
+
+**왜 Integer(INCR/DECR)가 아닌 List를 선택했는가?**
+- **원자적 재고 보장**: LPOP은 "재고가 있을 때만 성공"하는 명확한 시맨틱 제공
+- **Race Condition 원천 차단**: DECR의 경우 0 이하로 내려가지 않도록 하는 추가 로직 필요
+```java
+// DECR 방식의 문제점
+long stock = redisTemplate.opsForValue().decrement(stockKey);
+if (stock < 0) {
+    // 이미 늦음! 음수 재고 발생
+    redisTemplate.opsForValue().increment(stockKey);
+    throw new RuntimeException("재고 부족");
+}
+```
+- **복잡성 제거**: WATCH/MULTI/EXEC나 Lua 스크립트 없이도 안전한 재고 관리
+- **직관적 의미**: 토큰 기반으로 "재고 하나 = 토큰 하나"라는 명확한 개념
+
+### 3. 발급 완료 사용자 추적 (Set)
+```java
+private static final String COUPON_ISSUED = "coupon:issued:%d";
+```
+- **구조**: Redis Set
+- **용도**: 중복 발급 방지를 위한 발급 완료 사용자 저장
+- **특징**: O(1) 시간복잡도로 빠른 중복 체크
 
 ### 4. 중복 요청 방지 (Set)
 ```java
@@ -124,12 +145,33 @@ public void processWaitingQueues() {
 
 ## 동시성 제어 및 원자성 보장
 
-### Lua 스크립트 활용
+### Lua 스크립트 활용의 필요성
 
-**원자성이 필요한 이유**:
-- 재고 차감과 대기열 처리가 동시에 실행되어야 함
-- 부분 실패 시 데이터 불일치 발생 가능
-- Redis 명령어 간의 경쟁 상태 방지
+**Java 코드만으로는 해결할 수 없는 문제**:
+```java
+// 이런 방식은 원자성이 보장되지 않음
+String stock = redisTemplate.opsForList().leftPop(stockKey);  // 1번 연산
+if (stock != null) {
+    String userId = redisTemplate.opsForList().rightPop(queueKey);  // 2번 연산
+    // 1번과 2번 사이에 다른 요청이 끼어들 수 있음!
+}
+```
+
+**문제점**:
+- 재고 차감과 대기열 처리 사이에 다른 스레드가 개입 가능
+- 재고는 차감됐지만 대기열은 비어있는 상황 발생 가능
+- 부분 실패 시 수동 롤백 필요
+
+### Lua 스크립트를 통한 원자적 처리
+
+**스크립트 실행 방식**:
+```java
+@SuppressWarnings("unchecked")
+List<String> result = (List<String>) redisTemplate.execute(
+    couponIssueScript,
+    List.of(stockKey, queueKey) // KEYS[1] = stockKey, KEYS[2] = queueKey
+);
+```
 
 **Lua 스크립트 구조**:
 ```lua
@@ -159,11 +201,51 @@ end
 return {stock, userId}
 ```
 
-### 스크립트의 장점
-1. **원자성**: 모든 연산이 하나의 트랜잭션으로 실행
-2. **일관성**: 재고와 대기열 상태의 동기화 보장
-3. **롤백**: 실패 시 자동 상태 복구
-4. **성능**: 네트워크 왕복 최소화
+### 핵심 Redis 명령어 활용
+
+1. **LPOP (재고 차감)**:
+    - 재고 리스트의 맨 앞에서 토큰 제거
+    - 원자적으로 재고 감소 처리
+
+2. **RPOP (대기열 처리)**:
+    - 대기열의 맨 뒤에서 사용자 ID 제거
+    - FIFO 순서로 가장 오래 기다린 사용자 선택
+
+3. **LPUSH (롤백)**:
+    - 실패 시 재고를 다시 리스트 앞쪽에 복구
+    - 데이터 일관성 유지
+
+### 스케줄러에서의 활용
+
+```java
+private void processQueue(Long policyId) {
+    int processCount = 0;
+    while (processCount < 10) {
+        try {
+            // Lua 스크립트로 원자적 처리
+            @SuppressWarnings("unchecked")
+            List<String> result = (List<String>) redisTemplate.execute(
+                couponIssueScript,
+                List.of(stockKey, queueKey)
+            );
+            
+            if (result == null || result.isEmpty()) {
+                break; // 재고 없음 또는 대기열 비어있음
+            }
+            
+            String stock = result.get(0);
+            String userId = result.get(1);
+            
+            // DB 저장 시도
+            issueCoupon(policyId, Long.valueOf(userId));
+            
+        } catch (Exception e) {
+            // 실패 시 수동 롤백 (스크립트에서 이미 처리됨)
+            log.error("쿠폰 발급 실패 - 재시도 필요: {}", e.getMessage());
+        }
+    }
+}
+```
 
 ## 중복 발급 방지 메커니즘
 
@@ -188,15 +270,6 @@ return {stock, userId}
        throw new RuntimeException("이미 발급받은 쿠폰입니다.");
    }
    ```
-
-### 비관적 락 vs Redis 방식 비교
-
-| 구분 | 비관적 락 방식 | Redis 방식 |
-|------|---------------|------------|
-| 성능 | DB 락으로 인한 병목 | 인메모리 고속 처리 |
-| 확장성 | 커넥션 풀 제한 | 높은 동시 처리 능력 |
-| 안정성 | 데드락 위험 | 단일 스레드 모델 |
-| 복잡도 | 단순한 구조 | 복합적 자료구조 |
 
 ## 장애 복구 및 안정성
 
@@ -240,27 +313,8 @@ redisTemplate.expire(stockKey, 24, TimeUnit.HOURS);
 - Lua 스크립트로 Redis 왕복 횟수 최소화
 - Pipeline 사용 가능한 구조 설계
 
-## 모니터링 및 운영
-
-### 로깅 전략
-```java
-log.info("쿠폰 발급 완료 - 사용자: {}, 정책: {}", userId, policyId);
-log.error("대기열 처리 실패 - 정책: {}, 오류: {}", policy.getPolicyId(), e.getMessage());
-```
-
-### 주요 모니터링 지표
-- 대기열 길이 추적
-- 재고 소진 상황 모니터링
-- 처리 지연시간 측정
-- 실패율 및 재시도 횟수
-
-## 결론
-
-Redis 기반 선착순 쿠폰 발급 시스템은 다음과 같은 핵심 가치를 제공합니다:
-
-**성능**: 인메모리 처리로 초당 수천 건의 요청 처리 가능
-**안정성**: Lua 스크립트와 다층 중복 방지로 데이터 일관성 보장
-**확장성**: 수평적 확장이 용이한 아키텍처 설계
-**운영성**: 장애 복구와 모니터링이 용이한 구조
-
-이러한 설계를 통해 대용량 트래픽 환경에서도 안정적이고 공정한 선착순 쿠폰 발급 서비스를 제공할 수 있습니다.
+### 💡 최종 결론
+> 선착순 쿠폰 발급에서 Redis는 **대기열과 재고 관리의 원자적 처리**, 
+> DB는 **영구 데이터 저장소 역할**로 분리함으로써 각자의 강점을 살려 부하를 분산하고, 
+> List 자료구조와 Lua 스크립트를 활용해 Race Condition 없는 안전한 동시성 제어를 가능하게 하는 것은 **대용량 트래픽에서도 정확하고 공정한 선착순 보장을 실현**할 수 있게 한다.
+> 향후 비즈니스 확장에도 유연하게 대응할 수 있는 확장 가능한 아키텍처를 구축하는 데에 주요한 역할을 한다.
