@@ -1,6 +1,5 @@
 package kr.hhplus.be.server.order.application;
 
-import kr.hhplus.be.server.common.exception.InsufficientStockException;
 import kr.hhplus.be.server.common.exception.PaymentException;
 import kr.hhplus.be.server.common.lock.DistributedLock;
 import kr.hhplus.be.server.order.domain.Order;
@@ -99,6 +98,10 @@ public class OrderFacade {
 
             // 주문 상태 업데이트
             orderService.updateOrderStatus(order.getOrderId(), OrderStatus.PAID);
+
+            // 주문 결제 성공 시 Redis 판매수량 업데이트
+            productService.updateSalesRank(orderItems);
+
         } catch (Exception e) {
             // 결제 실패 처리
             orderService.updateOrderStatus(order.getOrderId(), OrderStatus.CANCELED);
