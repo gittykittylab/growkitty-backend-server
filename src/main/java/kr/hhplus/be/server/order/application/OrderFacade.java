@@ -8,24 +8,22 @@ import kr.hhplus.be.server.order.domain.OrderStatus;
 import kr.hhplus.be.server.order.domain.dto.request.OrderItemRequest;
 import kr.hhplus.be.server.order.domain.dto.request.OrderRequest;
 import kr.hhplus.be.server.order.domain.dto.response.OrderResponse;
-import kr.hhplus.be.server.order.domain.event.OrderEvents; // 추가
+import kr.hhplus.be.server.order.domain.event.OrderEvents;
 import kr.hhplus.be.server.payment.application.PaymentFacade;
 import kr.hhplus.be.server.product.application.ProductService;
 import kr.hhplus.be.server.product.domain.Product;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher; // 추가
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime; // 추가
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * OrderFacade 주문 관련 작업의 흐름을 조정하는 역할
  * 여러 서비스(OrderService, ProductService, PaymentFacade)를 조합
- * 이벤트 발행을 통해 데이터 플랫폼 연동과 관심사 분리
  */
 @Slf4j
 @Component
@@ -34,14 +32,13 @@ public class OrderFacade {
     private final OrderService orderService;
     private final ProductService productService;
     private final PaymentFacade paymentFacade;
-    private final ApplicationEventPublisher eventPublisher; // 추가
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 주문 생성 프로세스
      * 1. 상품 재고 확인 및 감소
      * 2. 주문 생성
      * 3. 결제 처리
-     * 4. 주문 완료 이벤트 발행 (트랜잭션 완료 후 데이터 플랫폼 전송)
      */
     @Transactional
     @DistributedLock(key = "multi:#request.getProductIds()", waitTime = 3, leaseTime = 10)
@@ -61,10 +58,9 @@ public class OrderFacade {
             processPayment(order, userId, request.getUsedAmount(), orderItems);
 
             // 4. 주문 완료 이벤트 발행
-            publishOrderCompletedEvent(order, orderItems);
+            eventPublisher.publishEvent(OrderEvents.OrderCompleted.from(order));
 
-            log.info("트랜잭션 종료 - OrderFacade.createOrder, 사용자: {}, 주문ID: {}",
-                    userId, order.getOrderId());
+            log.info("트랜잭션 종료 - OrderFacade.createOrder, 사용자: {}, 주문ID: {}", userId, order.getOrderId());
 
             return new OrderResponse(order);
         } catch (Exception e) {
@@ -72,65 +68,6 @@ public class OrderFacade {
             log.error("주문 처리 중 오류 발생: {}", e.getMessage(), e);
             throw e; // 적절한 예외 변환 또는 처리
         }
-    }
-
-    /**
-     * 주문 상태를 업데이트하고 상태 변경 이벤트 발행
-     */
-    @Transactional
-    public void updateOrderStatus(Long orderId, OrderStatus newStatus) {
-        Order order = orderService.getOrder(orderId);
-        OrderStatus previousStatus = order.getOrderStatus();
-
-        orderService.updateOrderStatus(orderId, newStatus);
-
-        // 상태 변경 이벤트 발행
-        publishOrderStatusChangedEvent(orderId, previousStatus, newStatus, "시스템 처리");
-    }
-
-    /**
-     * 주문 완료 이벤트 발행
-     */
-    private void publishOrderCompletedEvent(Order order, List<OrderItem> orderItems) {
-        List<OrderEvents.OrderCompleted.OrderItemData> itemData = orderItems.stream()
-                .map(item -> new OrderEvents.OrderCompleted.OrderItemData(
-                        item.getProductId(),
-                        item.getOrderedProductName(),
-                        item.getOrderItemQty(),
-                        item.getOrderedProductPrice(),
-                        item.getOrderItemPrice() * item.getOrderItemQty()
-                ))
-                .toList();
-
-        OrderEvents.OrderCompleted event = new OrderEvents.OrderCompleted(
-                order.getOrderId(),
-                order.getUserId(),
-                order.getTotalAmount(),
-                order.calculateFinalAmount(),
-                itemData,
-                LocalDateTime.now()
-        );
-
-        // 이벤트 발행 - 트랜잭션 커밋 후 OrderDataPlatformSender에서 처리
-        eventPublisher.publishEvent(event);
-        log.debug("주문 완료 이벤트 발행 완료: {}", order.getOrderId());
-    }
-
-    /**
-     * 주문 상태 변경 이벤트 발행
-     */
-    private void publishOrderStatusChangedEvent(Long orderId, OrderStatus previousStatus,
-                                                OrderStatus currentStatus, String reason) {
-        OrderEvents.OrderStatusChanged event = new OrderEvents.OrderStatusChanged(
-                orderId,
-                previousStatus.name(),
-                currentStatus.name(),
-                reason,
-                LocalDateTime.now()
-        );
-
-        eventPublisher.publishEvent(event);
-        log.debug("주문 상태 변경 이벤트 발행: {} -> {}", previousStatus, currentStatus);
     }
 
     /**
@@ -200,5 +137,13 @@ public class OrderFacade {
     public OrderResponse getOrder(Long orderId) {
         Order order = orderService.getOrder(orderId);
         return new OrderResponse(order);
+    }
+
+    /**
+     * 주문 상태를 업데이트합니다.
+     */
+    @Transactional
+    public void updateOrderStatus(Long orderId, OrderStatus orderStatus) {
+        orderService.updateOrderStatus(orderId, orderStatus);
     }
 }
