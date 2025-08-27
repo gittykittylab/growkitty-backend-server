@@ -64,6 +64,10 @@ dependencies {
     implementation ("com.fasterxml.jackson.core:jackson-databind")
     implementation ("org.springframework.boot:spring-boot-starter")
 
+    // retry
+    implementation ("org.springframework.retry:spring-retry")
+    implementation ("org.springframework:spring-aspects")
+
 }
 
 tasks.withType<Test> {
