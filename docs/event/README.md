@@ -3,6 +3,7 @@
 ## 1. 서론
 서비스가 확장됨에 따라 단일 애플리케이션과 데이터베이스만으로는 더 이상 요구사항을 충족하기 어려워지고, 이를 해결하기 위해 도메인 단위의 애플리케이션 서버 및 데이터베이스 분리(MSA, Microservice Architecture)가 활발히 도입되고 있다.
 그러나 이러한 도메인 분리 환경은 기존 단일 트랜잭션 모델이 보장하던 일관성(Consistency)과 원자성(Atomicity)을 확보하기 어렵다는 새로운 문제를 낳고 있으며, 본 문서는 이러한 한계를 분석하고 Choreography SAGA 패턴, 보상 트랜잭션(Compensating Transaction)등을 활용한 설계 방안을 제시하고자 한다.
+
 ---
 
 ## 2. 문제 정의: 도메인 단위 트랜잭션의 한계
@@ -16,13 +17,13 @@
 public OrderResponse createOrder(OrderRequest request) {
     // Product 도메인: 재고 확인/차감
     List<OrderItem> orderItems = prepareOrderItems(request.getOrderItems());
-    
+
     // Order 도메인: 주문 생성  
     Order order = orderService.createOrder(userId, orderItems);
-    
+
     // Payment 도메인: 결제 처리
     processPayment(order, userId, request.getUsedAmount(), orderItems);
-    
+
     // 이벤트 발행
     eventPublisher.publishEvent(OrderEvents.OrderCompleted.from(order));
 }
@@ -62,6 +63,10 @@ public OrderResponse createOrder(OrderRequest request) {
 3. **보상 트랜잭션**으로 실패 시 일관성 복구
 4. **멱등성 보장**으로 중복 처리 방지
 
+### 3.3 단계별 마이그레이션 전략
+1. **1단계**: 기존 ProductService에 이벤트 처리 추가
+2. **2단계**: 향후 독립된 InventoryService로 분리 (확장성 확보)
+
 ---
 
 ## 4. Choreography SAGA 패턴 설계
@@ -79,16 +84,16 @@ Choreography SAGA는 **중앙 오케스트레이터 없이**, 각 서비스가 �
 sequenceDiagram
     participant Client as 클라이언트
     participant Order as Order Service
-    participant Stock as Inventory Service
+    participant Product as Product Service (재고 관리)
     participant Payment as Payment Service
     participant EventBus as 이벤트 버스
 
     Client->>Order: 주문 요청
     Order->>EventBus: OrderCreated 이벤트
-    EventBus->>Stock: 재고 차감 처리
+    EventBus->>Product: 재고 차감 처리
 
     alt 재고 충분
-        Stock->>EventBus: StockReserved 이벤트
+        Product->>EventBus: StockReserved 이벤트
         EventBus->>Payment: 결제 처리
 
         alt 결제 성공
@@ -96,11 +101,11 @@ sequenceDiagram
             EventBus->>Order: 주문 완료 처리
         else 결제 실패
             Payment->>EventBus: PaymentFailed 이벤트
-            EventBus->>Stock: StockReleased (보상)
+            EventBus->>Product: StockReleased (보상)
             EventBus->>Order: OrderCanceled (보상)
         end
     else 재고 부족
-        Stock->>EventBus: StockReserveFailed 이벤트
+        Product->>EventBus: StockReserveFailed 이벤트
         EventBus->>Order: OrderCanceled (보상)
     end
 ```
@@ -109,12 +114,12 @@ sequenceDiagram
 | 단계 | 서비스 | 로컬 트랜잭션 | 발행 이벤트 | 실패 시 보상 이벤트 |
 |------|--------|---------------|-------------|-------------------|
 | 1 | Order Service | 주문 생성 + Outbox | OrderCreated | - |
-| 2 | Inventory Service | 재고 차감 + Outbox | StockReserved / StockReserveFailed | StockReleased |
+| 2 | Product Service | 재고 차감 + Outbox | StockReserved / StockReserveFailed | StockReleased |
 | 3 | Payment Service | 결제 처리 + Outbox | PaymentCompleted / PaymentFailed | - |
-| 보상1 | Inventory Service | 재고 복구 + Outbox | StockReleased | - |
+| 보상1 | Product Service | 재고 복구 + Outbox | StockReleased | - |
 | 보상2 | Order Service | 주문 취소 + Outbox | OrderCanceled | - |
 
-### 4.4 핵심 서비스 구현 예시
+### 4.4 핵심 서비스 구현
 
 #### Order Service
 ```java
@@ -131,7 +136,7 @@ public class OrderService {
         publishOutboxEvent("OrderCreated", OrderCreatedEvent.from(order));
     }
     
-    @EventHandler
+    @EventListener
     @Transactional
     public void handlePaymentCompleted(PaymentCompletedEvent event) {
         Order order = orderRepository.findById(event.getOrderId());
@@ -139,7 +144,7 @@ public class OrderService {
         publishOutboxEvent("OrderCompleted", OrderCompletedEvent.from(order));
     }
     
-    @EventHandler
+    @EventListener
     @Transactional
     public void handleStockReserveFailed(StockReserveFailedEvent event) {
         Order order = orderRepository.findById(event.getOrderId());
@@ -149,126 +154,255 @@ public class OrderService {
 }
 ```
 
-#### Inventory Service
+#### ProductService (현재 단계 - 재고 관리 포함)
 ```java
-@Service  
-public class InventoryService {
+@Service
+@RequiredArgsConstructor
+public class ProductService {
+    private final ProductRepository productRepository;
+    private final RedisTemplate<String, String> redisTemplate;
+    private final ApplicationEventPublisher eventPublisher;
+    private final OutboxRepository outboxRepository;
+    private final ProcessedEventRepository processedEventRepository;
     
-    @EventHandler
+    // === 기존 메서드들 유지 ===
+    
+    // 상품 조회 관련
+    public Product getProduct(Long productId) {
+        return productRepository.findById(productId)
+                .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다. id=" + productId));
+    }
+    
+    public List<ProductResponse> getProducts() {
+        List<Product> products = productRepository.findAll();
+        return products.stream()
+                .map(ProductResponse::new)
+                .collect(Collectors.toList());
+    }
+    
+    // 재고 처리 관련 (기존 메서드 유지)
+    @Transactional
+    public void decreaseStockWithPessimisticLock(Long productId, int quantity) {
+        Product product = productRepository.findByIdWithPessimisticLock(productId)
+                .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다. id=" + productId));
+        product.decreaseStock(quantity);
+        productRepository.save(product);
+    }
+    
+    @Transactional
+    public void recoverStocksWithPessimisticLock(List<OrderItem> orderItems) {
+        for (OrderItem item : orderItems) {
+            try {
+                productRepository.findByIdWithPessimisticLock(item.getProductId())
+                        .ifPresent(product -> {
+                            product.increaseStock(item.getOrderItemQty());
+                            productRepository.save(product);
+                        });
+            } catch (Exception e) {
+                throw new StockRecoveryException(item.getProductId(), e.getMessage());
+            }
+        }
+    }
+    
+    // === 이벤트 처리 추가 (SAGA 패턴 지원) ===
+    
+    /**
+     * 주문 생성 이벤트 처리 - 재고 차감
+     */
+    @EventListener
     @Transactional
     public void handleOrderCreated(OrderCreatedEvent event) {
         String idempotencyKey = event.getOrderId() + ":stock-reserve";
         
-        if (isAlreadyProcessed(idempotencyKey)) return;
+        // 멱등성 보장
+        if (isAlreadyProcessed(idempotencyKey)) {
+            log.info("재고 차감 이미 처리됨: {}", event.getOrderId());
+            return;
+        }
         
         try {
-            // 기존 ProductService 활용
+            // 기존 메서드 활용하여 재고 차감
             for (OrderItem item : event.getOrderItems()) {
-                productService.decreaseStockWithPessimisticLock(
-                    item.getProductId(), item.getOrderItemQty()
-                );
+                decreaseStockWithPessimisticLock(item.getProductId(), item.getOrderItemQty());
             }
             
+            // 성공 이벤트 발행
             publishOutboxEvent("StockReserved", 
                 StockReservedEvent.from(event.getOrderId(), event.getOrderItems()));
                 
         } catch (InsufficientStockException e) {
+            // 재고 부족 이벤트 발행
             publishOutboxEvent("StockReserveFailed", 
                 StockReserveFailedEvent.from(event.getOrderId(), e.getMessage()));
+        } catch (Exception e) {
+            log.error("재고 차감 처리 중 오류 발생: 주문ID {}", event.getOrderId(), e);
+            publishOutboxEvent("StockReserveFailed", 
+                StockReserveFailedEvent.from(event.getOrderId(), "시스템 오류"));
         }
         
         markAsProcessed(idempotencyKey);
     }
     
-    // 보상 트랜잭션
-    @EventHandler
-    @Transactional  
+    /**
+     * 결제 실패 이벤트 처리 - 재고 복구 (보상 트랜잭션)
+     */
+    @EventListener
+    @Transactional
     public void handlePaymentFailed(PaymentFailedEvent event) {
         String compensationKey = event.getOrderId() + ":stock-compensation";
         
-        if (isAlreadyProcessed(compensationKey)) return;
+        // 멱등성 보장
+        if (isAlreadyProcessed(compensationKey)) {
+            log.info("재고 보상 이미 처리됨: {}", event.getOrderId());
+            return;
+        }
         
-        // 기존 ProductService.recoverStocks 활용
-        productService.recoverStocksWithPessimisticLock(event.getOrderItems());
-        
-        publishOutboxEvent("StockReleased", 
-            StockReleasedEvent.from(event.getOrderId()));
+        try {
+            // 기존 메서드 활용하여 재고 복구
+            recoverStocksWithPessimisticLock(event.getOrderItems());
             
+            // 재고 복구 완료 이벤트 발행
+            publishOutboxEvent("StockReleased", 
+                StockReleasedEvent.from(event.getOrderId()));
+                
+        } catch (Exception e) {
+            log.error("재고 보상 처리 중 오류 발생: 주문ID {}", event.getOrderId(), e);
+            // 보상 트랜잭션 실패 시 알람/모니터링 필요
+        }
+        
         markAsProcessed(compensationKey);
+    }
+    
+    // === 이벤트 관련 헬퍼 메서드 ===
+    
+    @Transactional
+    private void publishOutboxEvent(String eventType, Object data) {
+        OutboxEvent event = OutboxEvent.builder()
+            .eventType(eventType)
+            .eventData(JsonUtils.toJson(data))
+            .idempotencyKey(generateIdempotencyKey(data))
+            .occurredAt(LocalDateTime.now())
+            .status("NEW")
+            .build();
+        
+        outboxRepository.save(event);
+    }
+    
+    private boolean isAlreadyProcessed(String idempotencyKey) {
+        return processedEventRepository.existsByIdempotencyKey(idempotencyKey);
+    }
+    
+    private void markAsProcessed(String idempotencyKey) {
+        processedEventRepository.save(
+            ProcessedEvent.create(idempotencyKey, "ProductService")
+        );
+    }
+    
+    private String generateIdempotencyKey(Object data) {
+        // 데이터 기반 멱등성 키 생성 로직
+        return UUID.randomUUID().toString();
     }
 }
 ```
 
 ---
 
-## 5. 보상 트랜잭션 설계
+## 5. 향후 확장 계획: InventoryService 분리
 
-### 5.1 개념
+### 5.1 분리 목적
+현재 ProductService가 가진 **두 가지 책임을 분리**하여 각각의 전문성을 높이고 독립적 확장을 가능하게 함:
+
+- **ProductService**: 상품 정보 관리 (카탈로그, 조회 중심)
+- **InventoryService**: 재고 관리 (트랜잭션, 동시성 제어 중심)
+
+### 5.2 분리 후 구조
+```java
+// 향후 ProductService (상품 정보만 담당)
+@Service
+public class ProductService {
+    // 상품 조회 관련만 유지
+    public Product getProduct(Long productId) { /* 기존 구현 유지 */ }
+    public List<ProductResponse> getProducts() { /* 기존 구현 유지 */ }
+    public ProductDetailResponse getProductById(Long productId) { /* 기존 구현 유지 */ }
+    public List<TopProductResponse> getTopSellingProducts() { /* 기존 구현 유지 */ }
+    
+    // 재고 관련 메서드 제거 예정
+}
+
+// 새로운 InventoryService (재고 전용)
+@Service
+public class InventoryService {
+    @Autowired
+    private ProductService productService; // 기존 재고 로직 활용
+    
+    @EventListener
+    @Transactional
+    public void handleOrderCreated(OrderCreatedEvent event) {
+        // ProductService의 재고 메서드 위임 호출
+        for (OrderItem item : event.getOrderItems()) {
+            productService.decreaseStockWithPessimisticLock(
+                item.getProductId(), item.getOrderItemQty()
+            );
+        }
+        publishOutboxEvent("StockReserved", ...);
+    }
+    
+    @EventListener
+    @Transactional
+    public void handlePaymentFailed(PaymentFailedEvent event) {
+        // ProductService의 보상 메서드 위임 호출
+        productService.recoverStocksWithPessimisticLock(event.getOrderItems());
+        publishOutboxEvent("StockReleased", ...);
+    }
+}
+```
+
+### 5.3 분리 시점과 기준
+**분리를 고려할 시점:**
+- 재고 관리 로직이 복잡해질 때 (예약 재고, 안전 재고 등)
+- 재고 관련 성능 최적화가 필요할 때
+- 재고 관리만을 위한 별도 DB/캐시 전략이 필요할 때
+- 조직적으로 재고 관리 전담 팀이 생길 때
+
+**마이그레이션 전략:**
+1. InventoryService 생성 후 ProductService 위임 호출
+2. 점진적으로 재고 로직을 InventoryService로 이관
+3. ProductService에서 재고 관련 코드 제거
+4. 필요시 별도 데이터베이스 분리
+
+---
+
+## 6. 보상 트랜잭션 설계
+
+### 6.1 개념
 보상 트랜잭션은 실패 시 **이전 단계의 결과를 되돌리는 반대 연산**으로, 단순 DB 롤백이 아니라 **비즈니스적으로 의미 있는 보정 작업**이어야 함.
 
-### 5.2 보상 작업 매트릭스
-| 원본 트랜잭션 | 보상 트랜잭션 | 비고 |
-|-------------|-------------|------|
-| 재고 차감 | 재고 복구 | 수량 원복 |
-| 결제 승인 | 결제 취소/환불 | PG사 API 연동 |
-| 쿠폰 사용 | 쿠폰 복구 | 쿠폰 상태 원복 |
-| 포인트 차감 | 포인트 복구 | 잔액 원복 |
+### 6.2 보상 작업 매트릭스
+| 원본 트랜잭션 | 보상 트랜잭션 | 구현 위치 | 비고 |
+|-------------|-------------|----------|------|
+| 재고 차감 | 재고 복구 | ProductService | 기존 recoverStocksWithPessimisticLock 활용 |
+| 결제 승인 | 결제 취소/환불 | PaymentService | PG사 API 연동 |
+| 쿠폰 사용 | 쿠폰 복구 | CouponService | 쿠폰 상태 원복 |
+| 포인트 차감 | 포인트 복구 | PointService | 잔액 원복 |
 
-### 5.3 설계 원칙
+### 6.3 설계 원칙
 1. **멱등성(Idempotency)**: 여러 번 실행되어도 동일한 결과 보장
 2. **확실성**: 보상 트랜잭션은 반드시 성공해야 함
 3. **비즈니스 의미**: 단순 DB 롤백이 아닌 비즈니스 관점의 취소 작업
 
-### 5.4 구현 예시
-```java
-@EventHandler
-@Transactional
-public void handlePaymentFailed(PaymentFailedEvent event) {
-    String idempotencyKey = event.getOrderId() + ":stock-compensation";
-    
-    // 멱등성 보장을 위한 중복 검사
-    if (compensationRepository.existsByIdempotencyKey(idempotencyKey)) {
-        log.info("재고 보상 이미 처리됨: {}", event.getOrderId());
-        return;
-    }
-    
-    // 재고 복구 처리
-    for (OrderItem item : event.getOrderItems()) {
-        Stock stock = stockRepository.findByProductId(item.getProductId());
-        stock.increase(item.getQuantity());
-        stockRepository.save(stock);
-    }
-    
-    // 보상 처리 완료 기록
-    compensationRepository.save(
-        CompensationRecord.builder()
-            .idempotencyKey(idempotencyKey)
-            .eventType("StockCompensation")
-            .processedAt(LocalDateTime.now())
-            .build()
-    );
-    
-    log.info("재고 보상 완료: 주문ID {}", event.getOrderId());
-}
-```
-
 ---
 
-## 6. 트랜잭션 일관성 보장 전략
+## 7. 트랜잭션 일관성 보장 전략
 
-### 6.1 Outbox 패턴
+### 7.1 Outbox 패턴
 이벤트 발행과 로컬 트랜잭션 커밋 간 원자성을 보장하기 위한 패턴
-
-**동작 원리:**
-- 비즈니스 데이터 + Outbox 이벤트를 **동일 DB 트랜잭션**에서 저장
-- 별도 Relayer/CDC가 Outbox를 브로커로 발행
 
 **Outbox 테이블 구조:**
 ```sql
 CREATE TABLE outbox_events (
     id UUID PRIMARY KEY,
-    aggregate_type VARCHAR(50),     -- ORDER, INVENTORY, PAYMENT
-    aggregate_id VARCHAR(255),      -- 주문ID, 재고ID 등
+    aggregate_type VARCHAR(50),     -- ORDER, PRODUCT, PAYMENT
+    aggregate_id VARCHAR(255),      -- 주문ID, 상품ID 등
     event_type VARCHAR(100),        -- OrderCreated, StockReserved
     event_data JSONB,               -- 이벤트 페이로드
     idempotency_key VARCHAR(255),   -- 중복 처리 방지
@@ -278,23 +412,7 @@ CREATE TABLE outbox_events (
 );
 ```
 
-**구현 예시:**
-```java
-@Transactional
-public void publishOutboxEvent(String eventType, Object data) {
-    OutboxEvent event = OutboxEvent.builder()
-        .eventType(eventType)
-        .eventData(JsonUtils.toJson(data))
-        .idempotencyKey(generateIdempotencyKey(data))
-        .occurredAt(LocalDateTime.now())
-        .status("NEW")
-        .build();
-    
-    outboxRepository.save(event); // 비즈니스 데이터와 함께 커밋
-}
-```
-
-### 6.2 멱등성 보장
+### 7.2 멱등성 보장
 ```sql
 CREATE TABLE processed_events (
     idempotency_key VARCHAR(255) PRIMARY KEY,
@@ -304,49 +422,23 @@ CREATE TABLE processed_events (
 );
 ```
 
-```java
-private boolean isAlreadyProcessed(String idempotencyKey) {
-    return processedEventRepository.existsByIdempotencyKey(idempotencyKey);
-}
-
-private void markAsProcessed(String idempotencyKey) {
-    processedEventRepository.save(
-        ProcessedEvent.create(idempotencyKey, "StockReserved")
-    );
-}
-```
-
 ---
 
-## 7. 장단점 분석 및 대응
+## 8. 장단점 분석 및 대응
 
-### 7.1 Choreography 패턴의 장점
-- 서비스 간 **느슨한 결합** 확보
-- **확장성**: 신규 서비스 추가 시 기존 서비스 수정 최소화
-- SPOF 제거로 시스템 안정성 향상
-- 각 서비스의 자율적 개발/배포 가능
+### 8.1 현재 접근법의 장점
+- **점진적 도입**: 기존 ProductService 코드 최대한 활용
+- **위험 최소화**: 검증된 재고 관리 로직 재사용
+- **빠른 적용**: 이벤트 처리만 추가하면 SAGA 패턴 적용 가능
 
-### 7.2 단점 및 대응
+### 8.2 단점 및 대응
 | 단점 | 대응 방안 |
 |------|----------|
+| **ProductService 책임 과다** | 향후 InventoryService 분리 계획 |
 | **전체 흐름 파악 어려움** | 분산 추적(Distributed Tracing) 도입 |
-| **순환 의존성 위험** | 이벤트 흐름 매트릭스 문서화 |
-| **보상 트랜잭션 복잡성** | 표준화된 보상 로직 정의 |
 | **디버깅 복잡성** | 중앙화된 로깅 및 모니터링 |
 
-### 7.3 트레이드오프 분석
-
-**얻는 것:**
-- 도메인별 독립적 확장/배포
-- 부분 장애 격리
-- 팀별 기술 스택 자율성
-
-**잃는 것:**
-- 강한 일관성 → 최종 일관성
-- 단순한 디버깅 → 분산 추적 필요
-- 즉시 응답 → 비동기 처리 지연
-
-### 7.4 장애 대응 매트릭스
+### 8.3 장애 대응 매트릭스
 | 장애 상황 | 감지 방법 | 대응 절차 | 복구 전략 |
 |----------|----------|----------|----------|
 | **Outbox 발행 실패** | 메트릭 알람 | Relayer 재시작, 실패 이벤트 재처리 | 지수 백오프 재시도 |
@@ -356,9 +448,17 @@ private void markAsProcessed(String idempotencyKey) {
 
 ---
 
-## 8. 결론
-> Choreography SAGA·Outbox/CDC·보상 트랜잭션 등을 적용해 전통적 단일 트랜잭션의 한계를 보완하며, 분산 트랜잭션 환경에서도 일관성과 확장성·안정성을 확보할 수 있음을 확인하였다.  
-> 다만, 강한 일관성이 필수적인 경우에는 한계가 있으므로, 이벤트 순서·중복 처리·보상 로직·운영 복잡성에 대한 보완 체계를 전제로 도입하는 것이 바람직하다.
+## 9. 결론
 
----
+### 9.1 단계별 도입 전략
+1. **현재**: ProductService에 이벤트 처리 추가로 SAGA 패턴 적용
+2. **단기**: 분산 추적 및 모니터링 체계 구축
+3. **장기**: InventoryService 분리를 통한 도메인 전문화
 
+### 9.2 핵심 성과
+- **기존 코드 활용**: 검증된 재고 관리 로직 재사용으로 안정성 확보
+- **점진적 전환**: 위험 최소화하며 MSA 패턴 도입
+- **확장 가능성**: 향후 InventoryService 분리를 통한 전문화 가능
+
+### 9.3 최종 평가
+> 현재 ProductService를 기반으로 한 Choreography SAGA 패턴 적용을 통해 기존 안정성을 유지하면서도 분산 트랜잭션의 일관성을 확보할 수 있음을 확인하였다. 향후 서비스 성장에 따라 InventoryService 분리를 통해 더욱 전문화된 재고 관리 체계로 발전시킬 수 있는 확장 가능한 설계가 완성되었다.
