@@ -8,11 +8,13 @@ import kr.hhplus.be.server.order.domain.OrderStatus;
 import kr.hhplus.be.server.order.domain.dto.request.OrderItemRequest;
 import kr.hhplus.be.server.order.domain.dto.request.OrderRequest;
 import kr.hhplus.be.server.order.domain.dto.response.OrderResponse;
+import kr.hhplus.be.server.order.domain.event.OrderEvents;
 import kr.hhplus.be.server.payment.application.PaymentFacade;
 import kr.hhplus.be.server.product.application.ProductService;
 import kr.hhplus.be.server.product.domain.Product;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +32,7 @@ public class OrderFacade {
     private final OrderService orderService;
     private final ProductService productService;
     private final PaymentFacade paymentFacade;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 주문 생성 프로세스
@@ -53,6 +56,9 @@ public class OrderFacade {
 
             // 3. 결제 처리
             processPayment(order, userId, request.getUsedAmount(), orderItems);
+
+            // 4. 주문 완료 이벤트 발행
+            eventPublisher.publishEvent(OrderEvents.OrderCompleted.from(order));
 
             log.info("트랜잭션 종료 - OrderFacade.createOrder, 사용자: {}, 주문ID: {}", userId, order.getOrderId());
 
