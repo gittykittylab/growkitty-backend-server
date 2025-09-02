@@ -68,6 +68,10 @@ dependencies {
     implementation ("org.springframework.retry:spring-retry")
     implementation ("org.springframework:spring-aspects")
 
+    // Kafka 의존성 추가
+    implementation("org.springframework.kafka:spring-kafka")
+    testImplementation("org.springframework.kafka:spring-kafka-test")
+
 }
 
 tasks.withType<Test> {
