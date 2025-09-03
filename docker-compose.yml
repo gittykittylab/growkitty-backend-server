@@ -55,7 +55,7 @@ services:
       KAFKA_JMX_HOSTNAME: localhost
     volumes:
       - ./data/kafka:/var/lib/kafka/data
-      -
+
       #Kafka UI
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
