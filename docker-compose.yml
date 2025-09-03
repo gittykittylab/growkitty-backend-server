@@ -13,6 +13,7 @@ services:
       - ./data/mysql/:/var/lib/mysql
       - ./src/main/resources/data:/var/lib/mysql-files  # CSV 파일을 컨테이너 내부로 마운트
     command: --local-infile=1 --secure-file-priv=/var/lib/mysql-files
+
   redis:
     image: redis:latest
     ports:
@@ -20,8 +21,9 @@ services:
     volumes:
       - ./data/redis:/data
     command: redis-server --appendonly yes  # 데이터 지속성을 위한 AOF 활성화
+
   zookeeper:
-    image: confluentinc/cp-zookeeper:latest
+    image: confluentinc/cp-zookeeper:7.3.0
     hostname: zookeeper
     container_name: zookeeper
     ports:
@@ -34,7 +36,7 @@ services:
       - ./data/zookeeper-logs:/var/lib/zookeeper/log
 
   kafka:
-    image: confluentinc/cp-kafka:latest
+    image: confluentinc/cp-kafka:7.3.0
     hostname: kafka
     container_name: kafka
     depends_on:
@@ -45,18 +47,20 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      # KAFKA_LISTENERS: 브로커가 리스닝할 IP와 포트를 설정합니다. (내부/외부 통신용)
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_JMX_PORT: 9101
       KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_CREATE_TOPICS: "order-completed:1:1"
     volumes:
       - ./data/kafka:/var/lib/kafka/data
 
-      #Kafka UI
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
