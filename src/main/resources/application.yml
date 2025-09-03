@@ -25,23 +25,52 @@ spring:
       hibernate.timezone.default_storage: NORMALIZE_UTC
       hibernate.jdbc.time_zone: UTC
 
-  # Kafka 설정 추가
+  # Kafka 설정
   kafka:
     bootstrap-servers: localhost:9092
-    consumer:
-      group-id: hhplus-group
-      auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      properties:
-        spring.json.trusted.packages: "kr.hhplus.be.server"
+
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       acks: all
       retries: 3
+      batch-size: 16384
+      linger-ms: 5
+
+    consumer:
+      group-id: ecommerce-order-service
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      auto-offset-reset: earliest
+
+      # ===== 커밋 설정 =====
+      enable-auto-commit: true          # 자동 커밋 활성화
+      auto-commit-interval: 1000ms      # 1초마다 자동 커밋
+
+      # ===== 하트비트 & 세션 관리 =====
+      heartbeat-interval: 3000ms        # 3초마다 하트비트 전송
+      session-timeout: 10000ms          # 10초 세션 타임아웃
+      request-timeout: 30000ms          # 30초 요청 타임아웃
+
+      # ===== 페치 설정 =====
+      fetch-min-size: 1024              # 최소 1KB 데이터가 모일 때까지 대기
+      fetch-max-wait: 500ms             # 최대 0.5초 대기 후 가져오기
+
+      # ===== 폴링 설정 =====
+      max-poll-records: 100             # 한 번에 최대 100개 메시지 처리
+      max-poll-interval: 300000ms       # 5분 내에 poll() 호출해야 함
+
+      # ===== JSON 직렬화 설정 =====
       properties:
-        enable.idempotence: true
+        spring.json.trusted.packages: "kr.hhplus.be.server.order.domain.dto.message"
+
+    # ===== Listener 설정 =====
+    listener:
+      concurrency: 3  # 3개의 컨슈머 스레드로 병렬 처리
+
+    # ===== Topic 설정 =====
+    topics:
+      order-completed: order-completed
 
   logging:
     level:
