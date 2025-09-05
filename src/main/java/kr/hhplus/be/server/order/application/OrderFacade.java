@@ -86,15 +86,9 @@ public class OrderFacade {
             OrderCompletedMessage message = OrderCompletedMessage.from(order, orderItems);
             orderKafkaProducer.sendOrderCompletedMessage(message);
 
-            log.info("Kafka 주문 완료 메시지 발행 요청 완료: orderId={}", order.getOrderId());
-
         } catch (Exception e) {
-            // Kafka 메시지 발행 실패가 주문 트랜잭션을 롤백시키지 않도록 처리
-            log.error("Kafka 메시지 발행 실패 - 주문은 정상 처리됨: orderId={}, error={}",
-                    order.getOrderId(), e.getMessage(), e);
-
-            // 실제 환경에서는 별도의 보상 처리나 재시도 메커니즘 필요
-            // 예: 실패한 메시지를 별도 테이블에 저장하고 배치로 재처리
+            log.error("Kafka 메시지 발행 실패 - 주문은 정상 처리됨: orderId={}",
+                    order.getOrderId(), e);
         }
     }
 
