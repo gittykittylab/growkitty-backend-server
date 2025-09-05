@@ -28,9 +28,8 @@ public class CouponIssueConsumer {
      * 선착순 쿠폰 발급
      */
     @KafkaListener(
-            topics = "coupon-issue",
-            groupId = "coupon-issue-group",
-            concurrency = "3"
+            topics = "${kafka.topics.coupon-issue:coupon-issue}",
+            groupId = "coupon-issue-group"
     )
     @Transactional
     public void handleCouponIssue(CouponIssueMessage message) {

@@ -21,8 +21,8 @@ public class OrderKafkaConsumer {
      * 주문 완료 메시지 수신 및 데이터 플랫폼 전송
      */
     @KafkaListener(
-            topics = "${topics.order-completed:order-completed}",
-            groupId = "data-platform-service"
+            topics = "${kafka.topics.order-completed:order-completed}",
+            groupId = "order-completed-group"
     )
     public void handleOrderCompleted(
             @Payload OrderCompletedMessage message,
