@@ -11,6 +11,7 @@ spring:
       connection-timeout: 10000
       max-lifetime: 60000
     driver-class-name: com.mysql.cj.jdbc.Driver
+
   redis:
     host: localhost
     port: 6379
@@ -23,6 +24,54 @@ spring:
     properties:
       hibernate.timezone.default_storage: NORMALIZE_UTC
       hibernate.jdbc.time_zone: UTC
+
+  # Kafka 설정
+  kafka:
+    bootstrap-servers: localhost:9092
+
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      # 멱등성 프로듀서 활성화 (acks=all, retries는 자동으로 최적화됨)
+      enable-idempotence: true
+      batch-size: 16384
+      linger-ms: 5
+
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      auto-offset-reset: earliest
+
+      # ===== 커밋 설정 =====
+      enable-auto-commit: false          # 자동 커밋
+#      auto-commit-interval: 1000ms      # 1초마다 자동 커밋
+
+      # ===== 하트비트 & 세션 관리 =====
+      heartbeat-interval: 3000ms        # 3초마다 하트비트 전송
+      session-timeout: 10000ms          # 10초 세션 타임아웃
+      request-timeout: 30000ms          # 30초 요청 타임아웃
+
+      # ===== 페치 설정 =====
+      fetch-min-size: 1024              # 최소 1KB 데이터가 모일 때까지 대기
+      fetch-max-wait: 500ms             # 최대 0.5초 대기 후 가져오기
+
+      # ===== 폴링 설정 =====
+      max-poll-records: 100             # 한 번에 최대 100개 메시지 처리
+      max-poll-interval: 300000ms       # 5분 내에 poll() 호출해야 함
+
+      # ===== JSON 직렬화 설정 =====
+      properties:
+        spring.json.trusted.packages: "kr.hhplus.be.server.order.domain.dto.message"
+
+    # ===== Listener 설정 =====
+    listener:
+      ack-mode: RECORD # Spring 컨테이너가 메시지 처리 성공 여부를 보고 알아서 커밋.
+      concurrency: 3  # 3개의 컨슈머 스레드로 병렬 처리
+
+    # ===== Topic 설정 =====
+    topics:
+      order-completed: order-completed
+      coupon-issue: coupon-issue
 
   logging:
     level:

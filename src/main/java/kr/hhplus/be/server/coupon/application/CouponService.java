@@ -2,6 +2,7 @@ package kr.hhplus.be.server.coupon.application;
 
 import kr.hhplus.be.server.coupon.domain.Coupon;
 import kr.hhplus.be.server.coupon.domain.CouponPolicy;
+import kr.hhplus.be.server.coupon.domain.dto.message.CouponIssueMessage;
 import kr.hhplus.be.server.coupon.domain.dto.reponse.WaitingQueueResponse;
 import kr.hhplus.be.server.coupon.domain.repository.CouponPolicyRepository;
 import kr.hhplus.be.server.coupon.domain.repository.CouponRepository;
@@ -9,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,12 +27,14 @@ public class CouponService {
     private final CouponRepository couponRepository;
     private final RedisTemplate<String, String> redisTemplate;
     private final RedisScript<List> couponIssueScript;
+    private final KafkaTemplate<String, CouponIssueMessage> kafkaTemplate;
 
     // Redis 키 패턴
     private static final String COUPON_QUEUE = "coupon:queue:%d";         // List - 대기열
     private static final String COUPON_ISSUED = "coupon:issued:%d";       // Set - 발급받은 사용자
     private static final String COUPON_STOCK = "coupon:stock:%d";         // List - 재고
     private static final String COUPON_SET = "coupon:queue:set:%d";
+    private static final String TOPIC_COUPON_ISSUE = "coupon-issue";
     /**
      * 쿠폰 발급 요청 - 대기열 진입
      */
@@ -87,11 +91,10 @@ public class CouponService {
     }
 
     /**
-     * 대기열 처리 스케줄러 (2초마다)
+     * 대기열 처리 스케줄러 ()
      */
     @Scheduled(fixedDelay = 2000)
     public void processWaitingQueues() {
-        // 활성화된 모든 쿠폰 정책 조회
         List<CouponPolicy> activePolicies = couponPolicyRepository.findAll();
 
         for (CouponPolicy policy : activePolicies) {
@@ -104,7 +107,7 @@ public class CouponService {
     }
 
     /**
-     * 대기열 처리 (Lua 스크립트 사용)
+     * 대기열 처리 (Lua 스크립트 + Kafka 전송)
      */
     private void processQueue(Long policyId) {
         String queueKey = String.format(COUPON_QUEUE, policyId);
@@ -118,52 +121,46 @@ public class CouponService {
         int processCount = 0;
         while (processCount < 10) {
             try {
-                // Lua 스크립트를 사용하여 원자적으로 재고와 대기열에서 처리
+                // 기존 Lua 스크립트 사용하여 원자적으로 재고와 대기열에서 처리
                 @SuppressWarnings("unchecked")
                 List<String> result = (List<String>) redisTemplate.execute(
                         couponIssueScript,
                         List.of(stockKey, queueKey) // KEYS[1] = stockKey, KEYS[2] = queueKey
                 );
 
-                // 스크립트 실행 결과가 null이면 재고가 없거나 대기열이 비어있음
                 if (result == null || result.isEmpty()) {
                     log.info("처리할 사용자가 없거나 재고가 소진되었습니다 - 정책: {}", policyId);
                     break;
                 }
 
-                // Lua 스크립트에서 반환된 결과: [stock, userId]
                 String stock = result.get(0);
                 String userId = result.get(1);
 
                 try {
-                    // 실제 쿠폰 발급 (DB 저장)
-                    issueCoupon(policyId, Long.valueOf(userId));
+                    // Kafka로 메시지 전송 (policyId를 키로 사용)
+                    CouponIssueMessage message = new CouponIssueMessage(policyId, Long.valueOf(userId));
+                    kafkaTemplate.send(TOPIC_COUPON_ISSUE, policyId.toString(), message);
 
-                    // 발급 완료 기록 (SADD)
-                    redisTemplate.opsForSet().add(issuedKey, userId);
-
-                    log.info("쿠폰 발급 완료 - 사용자: {}, 정책: {}", userId, policyId);
+                    log.info("쿠폰 발급 메시지 전송 완료 - 사용자: {}, 정책: {}", userId, policyId);
                     processCount++;
 
                 } catch (Exception e) {
-                    log.error("쿠폰 발급 실패 - 사용자: {}, 정책: {}, 오류: {}", userId, policyId, e.getMessage());
+                    log.error("Kafka 메시지 전송 실패 - 사용자: {}, 정책: {}, 오류: {}", userId, policyId, e.getMessage());
 
-                    // DB 발급 실패 시 Redis에서 꺼낸 재고와 사용자를 복구
-                    // 재고 복구 (다시 앞쪽에 추가)
+                    // Kafka 전송 실패 시 Redis에서 꺼낸 재고와 사용자를 복구
                     redisTemplate.opsForList().leftPush(stockKey, stock);
-                    // 사용자를 대기열 뒤쪽에 다시 추가 (재시도 기회 제공)
                     redisTemplate.opsForList().rightPush(queueKey, userId);
                 }
 
             } catch (Exception e) {
                 log.error("Lua 스크립트 실행 실패 - 정책: {}, 오류: {}", policyId, e.getMessage());
-                break; // 스크립트 실행 자체가 실패하면 루프 중단
+                break;
             }
         }
     }
 
     /**
-     * 재고 초기화 - 실제 동작 로직
+     * 재고 초기화
      */
     private void initializeStockIfNeeded(Long policyId, String stockKey) {
         // 이미 재고가 있으면 건너뛰기

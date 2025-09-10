@@ -5,10 +5,12 @@ import kr.hhplus.be.server.common.lock.DistributedLock;
 import kr.hhplus.be.server.order.domain.Order;
 import kr.hhplus.be.server.order.domain.OrderItem;
 import kr.hhplus.be.server.order.domain.OrderStatus;
+import kr.hhplus.be.server.order.domain.dto.message.OrderCompletedMessage;
 import kr.hhplus.be.server.order.domain.dto.request.OrderItemRequest;
 import kr.hhplus.be.server.order.domain.dto.request.OrderRequest;
 import kr.hhplus.be.server.order.domain.dto.response.OrderResponse;
 import kr.hhplus.be.server.order.domain.event.OrderEvents;
+import kr.hhplus.be.server.order.infrastructure.kafka.OrderKafkaProducer;
 import kr.hhplus.be.server.payment.application.PaymentFacade;
 import kr.hhplus.be.server.product.application.ProductService;
 import kr.hhplus.be.server.product.domain.Product;
@@ -32,13 +34,15 @@ public class OrderFacade {
     private final OrderService orderService;
     private final ProductService productService;
     private final PaymentFacade paymentFacade;
-    private final ApplicationEventPublisher eventPublisher;
+//    private final ApplicationEventPublisher eventPublisher;
+    private final OrderKafkaProducer orderKafkaProducer;
 
     /**
      * 주문 생성 프로세스
      * 1. 상품 재고 확인 및 감소
      * 2. 주문 생성
      * 3. 결제 처리
+     * 4. Kafka 메시지 발행
      */
     @Transactional
     @DistributedLock(key = "multi:#request.getProductIds()", waitTime = 3, leaseTime = 10)
@@ -57,8 +61,12 @@ public class OrderFacade {
             // 3. 결제 처리
             processPayment(order, userId, request.getUsedAmount(), orderItems);
 
-            // 4. 주문 완료 이벤트 발행
-            eventPublisher.publishEvent(OrderEvents.OrderCompleted.from(order));
+            // 4. Kafka 메시지 발행
+            publishOrderCompletedMessage(order, orderItems);
+
+
+//            // 4. 주문 완료 이벤트 발행
+//            eventPublisher.publishEvent(OrderEvents.OrderCompleted.from(order));
 
             log.info("트랜잭션 종료 - OrderFacade.createOrder, 사용자: {}, 주문ID: {}", userId, order.getOrderId());
 
@@ -67,6 +75,20 @@ public class OrderFacade {
             // 주문 처리 중 오류 발생 시 처리
             log.error("주문 처리 중 오류 발생: {}", e.getMessage(), e);
             throw e; // 적절한 예외 변환 또는 처리
+        }
+    }
+
+    /**
+     * Kafka를 통한 주문 완료 메시지 발행
+     */
+    private void publishOrderCompletedMessage(Order order, List<OrderItem> orderItems) {
+        try {
+            OrderCompletedMessage message = OrderCompletedMessage.from(order, orderItems);
+            orderKafkaProducer.sendOrderCompletedMessage(message);
+
+        } catch (Exception e) {
+            log.error("Kafka 메시지 발행 실패 - 주문은 정상 처리됨: orderId={}",
+                    order.getOrderId(), e);
         }
     }
 
