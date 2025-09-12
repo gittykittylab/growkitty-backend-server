@@ -9,7 +9,7 @@ SELECT
 FROM
     products p
 JOIN
-    order_items oi ON p.product_id = oi.ordered_product_id
+    order_items oi ON p.product_id = oi.product_id
 JOIN
     orders o ON oi.order_id = o.order_id
 WHERE

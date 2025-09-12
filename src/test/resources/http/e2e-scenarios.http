@@ -1,0 +1,467 @@
+### E2E 플로우 부하 테스트 스크립트 (수정됨)
+
+### 환경 변수 (다양한 사용자/상품으로 부하 생성)
+@host = http://localhost:8080
+@baseUserId = 1
+@baseProductId = 1
+
+### =================================================
+### E2E 플로우 1: 사용자 1
+### =================================================
+
+### 1-1. 사용자 1 포인트 조회
+GET {{host}}/api/users/1/points
+
+> {%
+    console.log("사용자1 포인트 조회 - 응답시간: " + response.responseTime + "ms");
+    if (response.status === 200) {
+        const balance = response.body.pointBalance || 0;
+        console.log("사용자1 현재 포인트: " + balance + "원");
+    }
+%}
+
+###
+
+### 1-2. 인기상품 조회
+GET {{host}}/api/products/top-selling
+
+> {%
+    console.log("인기상품 조회 - 응답시간: " + response.responseTime + "ms");
+%}
+
+###
+
+### 1-3. 상품 1 정보 조회
+GET {{host}}/api/products/1
+
+> {%
+    console.log("상품1 조회 - 응답시간: " + response.responseTime + "ms");
+%}
+
+###
+
+### 1-4. 사용자 1 주문 생성
+POST {{host}}/api/orders
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "orderItems": [
+    {
+      "productId": 1,
+      "quantity": 3
+    }
+  ],
+  "usedAmount": 30000
+}
+
+> {%
+    const responseTime = response.timingPhases ? (response.timingPhases.wait + response.timingPhases.receive) : response.responseTime;
+    console.log("사용자1 주문 생성 - 응답시간: " + responseTime + "ms");
+    if (response.status === 200 || response.status === 201) {
+        const orderId = response.body.orderId || response.body.id;
+        client.global.set("orderId1", orderId);
+        console.log("사용자1 주문 성공 - 주문 ID: " + orderId);
+    } else {
+        client.global.set("orderId1", "failed");
+        console.log("사용자1 주문 실패 - 상태: " + response.status + ", 응답: " + JSON.stringify(response.body));
+    }
+%}
+
+###
+
+### 1-5. 사용자 1 주문 조회
+GET {{host}}/api/orders/{{orderId1}}
+
+> {%
+    const orderId = client.global.get("orderId1");
+    if (orderId && orderId !== "failed") {
+        console.log("사용자1 주문 조회 - 응답시간: " + response.responseTime + "ms");
+        if (response.status === 200) {
+            const orderStatus = response.body.orderStatus || "확인불가";
+            const totalAmount = response.body.totalAmount || 0;
+            console.log("사용자1 주문 상태: " + orderStatus + ", 총 금액: " + totalAmount + "원");
+        }
+    } else {
+        console.log("사용자1 주문 조회 스킵 - 주문 생성 실패");
+    }
+%}
+
+###
+
+### =================================================
+### E2E 플로우 2: 사용자 2
+### =================================================
+
+### 2-1. 사용자 2 포인트 조회
+GET {{host}}/api/users/2/points
+
+> {%
+    console.log("사용자2 포인트 조회 - 응답시간: " + response.responseTime + "ms");
+    if (response.status === 200) {
+        const balance = response.body.pointBalance || 0;
+        console.log("사용자2 현재 포인트: " + balance + "원");
+    }
+%}
+
+###
+
+### 2-2. 인기상품 조회
+GET {{host}}/api/products/top-selling
+
+> {%
+    console.log("사용자2 인기상품 조회 - 응답시간: " + response.responseTime + "ms");
+%}
+
+###
+
+### 2-3. 상품 1 정보 조회
+GET {{host}}/api/products/1
+
+> {%
+    console.log("사용자2 상품1 조회 - 응답시간: " + response.responseTime + "ms");
+%}
+
+###
+
+### 2-4. 사용자 2 주문 생성
+POST {{host}}/api/orders
+Content-Type: application/json
+
+{
+  "userId": 2,
+  "orderItems": [
+    {
+      "productId": 1,
+      "quantity": 5
+    }
+  ],
+  "usedAmount": 50000
+}
+
+> {%
+    const responseTime = response.timingPhases ? (response.timingPhases.wait + response.timingPhases.receive) : response.responseTime;
+    console.log("사용자2 주문 생성 - 응답시간: " + responseTime + "ms");
+    if (response.status === 200 || response.status === 201) {
+        const orderId = response.body.orderId || response.body.id;
+        client.global.set("orderId2", orderId);
+        console.log("사용자2 주문 성공 - 주문 ID: " + orderId);
+    } else {
+        client.global.set("orderId2", "failed");
+        console.log("사용자2 주문 실패 - 상태: " + response.status + ", 응답: " + JSON.stringify(response.body));
+    }
+%}
+
+###
+
+### 2-5. 사용자 2 주문 조회
+GET {{host}}/api/orders/{{orderId2}}
+
+> {%
+    const orderId = client.global.get("orderId2");
+    if (orderId && orderId !== "failed") {
+        console.log("사용자2 주문 조회 - 응답시간: " + response.responseTime + "ms");
+        if (response.status === 200) {
+            const orderStatus = response.body.orderStatus || "확인불가";
+            const totalAmount = response.body.totalAmount || 0;
+            console.log("사용자2 주문 상태: " + orderStatus + ", 총 금액: " + totalAmount + "원");
+        }
+    } else {
+        console.log("사용자2 주문 조회 스킵 - 주문 생성 실패");
+    }
+%}
+
+###
+
+### =================================================
+### E2E 플로우 3: 사용자 3 전체 플로우
+### =================================================
+
+### 3-1. 사용자 3 포인트 조회
+GET {{host}}/api/users/3/points
+
+> {%
+    console.log("사용자3 포인트 조회 - 응답시간: " + response.responseTime + "ms");
+    if (response.status === 200) {
+        const balance = response.body.pointBalance || 0;
+        console.log("사용자3 현재 포인트: " + balance + "원");
+    }
+%}
+
+###
+
+### 3-2. 인기상품 조회
+GET {{host}}/api/products/top-selling
+
+> {%
+    console.log("사용자3 인기상품 조회 - 응답시간: " + response.responseTime + "ms");
+%}
+
+###
+
+### 3-3. 상품 2 정보 조회
+GET {{host}}/api/products/2
+
+> {%
+    console.log("사용자3 상품2 조회 - 응답시간: " + response.responseTime + "ms");
+%}
+
+###
+
+### 3-4. 사용자 3 주문 생성
+POST {{host}}/api/orders
+Content-Type: application/json
+
+{
+  "userId": 3,
+  "orderItems": [
+    {
+      "productId": 2,
+      "quantity": 2
+    }
+  ],
+  "usedAmount": 20000
+}
+
+> {%
+    const responseTime = response.timingPhases ? (response.timingPhases.wait + response.timingPhases.receive) : response.responseTime;
+    console.log("사용자3 주문 생성 - 응답시간: " + responseTime + "ms");
+    if (response.status === 200 || response.status === 201) {
+        const orderId = response.body.orderId || response.body.id;
+        client.global.set("orderId3", orderId);
+        console.log("사용자3 주문 성공 - 주문 ID: " + orderId);
+    } else {
+        client.global.set("orderId3", "failed");
+        console.log("사용자3 주문 실패 - 상태: " + response.status + ", 응답: " + JSON.stringify(response.body));
+    }
+%}
+
+###
+
+### 3-5. 사용자 3 주문 조회
+GET {{host}}/api/orders/{{orderId3}}
+
+> {%
+    const orderId = client.global.get("orderId3");
+    if (orderId && orderId !== "failed") {
+        console.log("사용자3 주문 조회 - 응답시간: " + response.responseTime + "ms");
+        if (response.status === 200) {
+            const orderStatus = response.body.orderStatus || "확인불가";
+            const totalAmount = response.body.totalAmount || 0;
+            console.log("사용자3 주문 상태: " + orderStatus + ", 총 금액: " + totalAmount + "원");
+        }
+    } else {
+        console.log("사용자3 주문 조회 스킵 - 주문 생성 실패");
+    }
+%}
+
+###
+
+### =================================================
+### E2E 플로우 4: 사용자 4
+### =================================================
+
+### 4-1. 사용자 4 포인트 조회
+GET {{host}}/api/users/4/points
+
+> {%
+    console.log("사용자4 포인트 조회 - 응답시간: " + response.responseTime + "ms");
+    if (response.status === 200) {
+        const balance = response.body.pointBalance || 0;
+        console.log("사용자4 현재 포인트: " + balance + "원");
+    }
+%}
+
+###
+
+### 4-2. 인기상품 조회
+GET {{host}}/api/products/top-selling
+
+> {%
+    console.log("사용자4 인기상품 조회 - 응답시간: " + response.responseTime + "ms");
+%}
+
+###
+
+### 4-3. 상품 1 정보 조회
+GET {{host}}/api/products/1
+
+> {%
+    console.log("사용자4 상품1 조회 - 응답시간: " + response.responseTime + "ms");
+%}
+
+###
+
+### 4-4. 사용자 4 대량 주문 생성
+POST {{host}}/api/orders
+Content-Type: application/json
+
+{
+  "userId": 4,
+  "orderItems": [
+    {
+      "productId": 1,
+      "quantity": 10
+    }
+  ],
+  "usedAmount": 100000
+}
+
+> {%
+    const responseTime = response.timingPhases ? (response.timingPhases.wait + response.timingPhases.receive) : response.responseTime;
+    console.log("사용자4 대량 주문 생성 - 응답시간: " + responseTime + "ms");
+    if (response.status === 200 || response.status === 201) {
+        const orderId = response.body.orderId || response.body.id;
+        client.global.set("orderId4", orderId);
+        console.log("사용자4 대량 주문 성공 - 주문 ID: " + orderId);
+    } else {
+        client.global.set("orderId4", "failed");
+        console.log("사용자4 대량 주문 실패 - 상태: " + response.status + ", 응답: " + JSON.stringify(response.body));
+    }
+%}
+
+###
+
+### 4-5. 사용자 4 주문 조회
+GET {{host}}/api/orders/{{orderId4}}
+
+> {%
+    const orderId = client.global.get("orderId4");
+    if (orderId && orderId !== "failed") {
+        console.log("사용자4 주문 조회 - 응답시간: " + response.responseTime + "ms");
+        if (response.status === 200) {
+            const orderStatus = response.body.orderStatus || "확인불가";
+            const totalAmount = response.body.totalAmount || 0;
+            console.log("사용자4 주문 상태: " + orderStatus + ", 총 금액: " + totalAmount + "원");
+        }
+    } else {
+        console.log("사용자4 주문 조회 스킵 - 주문 생성 실패");
+    }
+%}
+
+###
+
+### =================================================
+### E2E 플로우 5: 사용자 5 전체 플로우
+### =================================================
+
+### 5-1. 사용자 5 포인트 조회
+GET {{host}}/api/users/5/points
+
+> {%
+    console.log("사용자5 포인트 조회 - 응답시간: " + response.responseTime + "ms");
+    if (response.status === 200) {
+        const balance = response.body.pointBalance || 0;
+        console.log("사용자5 현재 포인트: " + balance + "원");
+    }
+%}
+
+###
+
+### 5-2. 인기상품 조회
+GET {{host}}/api/products/top-selling
+
+> {%
+    console.log("사용자5 인기상품 조회 - 응답시간: " + response.responseTime + "ms");
+%}
+
+###
+
+### 5-3. 상품 1 정보 조회
+GET {{host}}/api/products/1
+
+> {%
+    console.log("사용자5 상품1 조회 - 응답시간: " + response.responseTime + "ms");
+%}
+
+###
+
+### 5-4. 상품 2 정보 조회
+GET {{host}}/api/products/2
+
+> {%
+    console.log("사용자5 상품2 조회 - 응답시간: " + response.responseTime + "ms");
+%}
+
+###
+
+### 5-5. 사용자 5
+POST {{host}}/api/orders
+Content-Type: application/json
+
+{
+  "userId": 5,
+  "orderItems": [
+    {
+      "productId": 1,
+      "quantity": 2
+    },
+    {
+      "productId": 2,
+      "quantity": 3
+    }
+  ],
+  "usedAmount": 50000
+}
+
+> {%
+    const responseTime = response.timingPhases ? (response.timingPhases.wait + response.timingPhases.receive) : response.responseTime;
+    console.log("사용자5 다중상품 주문 생성 - 응답시간: " + responseTime + "ms");
+    if (response.status === 200 || response.status === 201) {
+        const orderId = response.body.orderId || response.body.id;
+        client.global.set("orderId5", orderId);
+        console.log("사용자5 다중상품 주문 성공 - 주문 ID: " + orderId);
+    } else {
+        client.global.set("orderId5", "failed");
+        console.log("사용자5 다중상품 주문 실패 - 상태: " + response.status + ", 응답: " + JSON.stringify(response.body));
+    }
+%}
+
+###
+
+### 5-6. 사용자 5 주문 조회
+GET {{host}}/api/orders/{{orderId5}}
+
+> {%
+    const orderId = client.global.get("orderId5");
+    if (orderId && orderId !== "failed") {
+        console.log("사용자5 주문 조회 - 응답시간: " + response.responseTime + "ms");
+        if (response.status === 200) {
+            const orderStatus = response.body.orderStatus || "확인불가";
+            const totalAmount = response.body.totalAmount || 0;
+            console.log("사용자5 주문 상태: " + orderStatus + ", 총 금액: " + totalAmount + "원");
+        }
+        console.log("=== 모든 E2E 플로우 완료 ===");
+    } else {
+        console.log("사용자5 주문 조회 스킵 - 주문 생성 실패");
+        console.log("=== 모든 E2E 플로우 완료 ===");
+    }
+%}
+
+###
+
+### =================================================
+### 부하 테스트 결과 요약
+### =================================================
+
+### 최종 결과 확인
+GET {{host}}/api/orders/summary
+
+> {%
+    console.log("=== 부하 테스트 결과 요약 ===");
+    console.log("전체 테스트 완료 시간: " + new Date().toISOString());
+
+    // 각 사용자별 주문 결과 확인
+    const orderIds = ["orderId1", "orderId2", "orderId3", "orderId4", "orderId5"];
+    orderIds.forEach((orderIdVar, index) => {
+        const orderId = client.global.get(orderIdVar);
+        const userNum = index + 1;
+        if (orderId && orderId !== "failed") {
+            console.log("사용자" + userNum + " 주문 성공 - ID: " + orderId);
+        } else {
+            console.log("사용자" + userNum + " 주문 실패");
+        }
+    });
+%}
+
+###
